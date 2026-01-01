@@ -1,0 +1,24 @@
+{
+  "medhallu_baseline": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "correction_accuracy": 1.0,
+    "hallucination_rate": 1.0,
+    "num_samples": 9000,
+    "tp": 9000,
+    "fp": 0,
+    "fn": 0
+  },
+  "truthfulqa_baseline": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "correction_accuracy": 1.0,
+    "hallucination_rate": 0.0,
+    "num_samples": 817,
+    "tp": 0,
+    "fp": 0,
+    "fn": 0
+  }
+}
