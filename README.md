@@ -1,2 +1,16 @@
-# multi-agent-hallucination-detection-and-correction
-A multi-agent framework for detecting and correcting hallucinations in large language models using retrieval-based fact-checking, cross-model agreement, and structured self-critique, evaluated on MedHallu and TruthfulQA benchmarks.
+# Multi-Agent Hallucination Detection and Correction System
+
+This repository contains the experimental codebase for the Master's dissertation
+at Liverpool John Moores University (LJMU):
+
+"Multi-Agent Hallucination Detection and Correction System"
+
+The project evaluates a multi-agent framework integrating:
+- Retrieval-based fact-checking
+- Cross-model agreement
+- Structured self-critique
+
+Benchmarks:
+- MedHallu (medical hallucinations)
+- TruthfulQA (adversarial & misconception-based hallucinations)
+
