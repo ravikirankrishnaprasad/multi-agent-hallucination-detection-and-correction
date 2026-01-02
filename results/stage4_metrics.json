@@ -1,0 +1,41 @@
+{
+  "stage": "stage4_correction",
+  "input_jsonl": "/Users/vkrkscb/Desktop/LJMU/github/multi-agent-hallucination-detection-and-correction/results/stage3_verification.jsonl",
+  "output_jsonl": "/Users/vkrkscb/Desktop/LJMU/github/multi-agent-hallucination-detection-and-correction/results/stage4_corrections.jsonl",
+  "correct_on": "pred",
+  "similarity_thresholds": {
+    "medhallu": 0.6,
+    "truthfulqa": 0.7
+  },
+  "overall": {
+    "total_samples": 9817,
+    "baseline_hallucination_rate": 1.0,
+    "after_correction_hallucination_rate": 0.9388815320362637,
+    "hallucination_rate_reduction": 0.06111846796373632,
+    "corrected_cases": 531,
+    "correction_accuracy": 0.0018832391713747645
+  },
+  "per_dataset": {
+    "medhallu": {
+      "total": 9000,
+      "baseline_hallucination_rate": 1.0,
+      "after_correction_hallucination_rate": 0.9333333333333333,
+      "hallucination_rate_reduction": 0.06666666666666665,
+      "corrected_cases": 424,
+      "correction_accuracy": 0.0023584905660377358
+    },
+    "truthfulqa": {
+      "total": 817,
+      "baseline_hallucination_rate": 1.0,
+      "after_correction_hallucination_rate": 1.0,
+      "hallucination_rate_reduction": 0.0,
+      "corrected_cases": 107,
+      "correction_accuracy": 0.0
+    }
+  },
+  "notes": {
+    "correction_method": "Evidence-based extractive correction (top evidence snippet; for MedHallu selects best sentence).",
+    "truthfulqa_correctness": "Correct if corrected answer matches any correct answer (exact normalized or similarity).",
+    "medhallu_correctness": "Correct if similarity(corrected, GT) >= threshold."
+  }
+}
