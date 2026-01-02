@@ -6,6 +6,24 @@ __pycache__/
 # C extensions
 *.so
 
+# -----------------------------
+# Large experiment artifacts (DO NOT COMMIT)
+# -----------------------------
+results/*outputs*.jsonl
+results/*.jsonl
+results/*.jsonl.gz
+
+indices/
+data/raw/
+data/processed/
+
+# -----------------------------
+# Allowlist: keep summaries & figures
+# -----------------------------
+!results/*.csv
+!results/*.json
+!results/*.png
+
 # Distribution / packaging
 .Python
 build/
