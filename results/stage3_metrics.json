@@ -1,0 +1,31 @@
+{
+  "stage": "stage3_verification",
+  "threshold": 0.15,
+  "top_k": 5,
+  "counts": {
+    "medhallu_rows": 9000,
+    "truthfulqa_rows": 817
+  },
+  "medhallu_metrics": {
+    "tp": 424.0,
+    "fp": 0.0,
+    "fn": 8576.0,
+    "tn": 0.0,
+    "precision": 1.0,
+    "recall": 0.04711111111111111,
+    "f1": 0.0899830220713073
+  },
+  "truthfulqa_metrics": {
+    "tp": 107.0,
+    "fp": 0.0,
+    "fn": 710.0,
+    "tn": 0.0,
+    "precision": 1.0,
+    "recall": 0.13096695226438188,
+    "f1": 0.2316017316017316
+  },
+  "notes": {
+    "medhallu_labeling": "In Stage-3 evaluation, all MedHallu 'Hallucinated Answer' entries are treated as hallucinated (positive class).",
+    "truthfulqa_labeling": "TruthfulQA label_hallucinated is computed by exact-normalized match of Best Answer in Correct Answers list."
+  }
+}
