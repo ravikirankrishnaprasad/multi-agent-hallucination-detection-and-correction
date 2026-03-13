@@ -1,4 +1,11 @@
 # Multi-Agent Hallucination Detection and Correction System
+
+![Python](https://img.shields.io/badge/Python-3.10+-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
+![Research](https://img.shields.io/badge/Type-AI%20Research-purple)
+![Status](https://img.shields.io/badge/Project-Completed-brightgreen)
+![University](https://img.shields.io/badge/LJMU-MSc%20Dissertation-orange)
+
 This repository contains the implementation accompanying the MSc dissertation submitted to **Liverpool John Moores University (LJMU)**.
 
 The project investigates methods for **detecting and correcting hallucinations in Large Language Model (LLM) outputs** using a modular multi-agent verification framework.
@@ -184,6 +191,17 @@ Summary metrics and figures required to reproduce the results are included.
 # License
 This project is released under the **MIT License**.
 
+---
+# Citation
+
+If you use this work in research or academic projects, please cite the dissertation as:
+
+```id="citation"
+Ravikiran VK (2026).
+Multi-Agent Hallucination Detection and Correction System.
+MSc Artificial Intelligence & Machine Learning Dissertation,
+Liverpool John Moores University.
+```
 ---
 # Author
 
