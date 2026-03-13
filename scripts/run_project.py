@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """run_project.py
 
-Dataset preparation + baseline evaluation for the dissertation project:
-"Multi-Agent Hallucination Detection and Correction System" (LJMU).
+Stage-1: dataset preparation + baseline evaluation for the dissertation project.
 
-This script is Stage-1: dataset preparation (clean + persist) and a
-simple baseline evaluation (no LLMs/APIs).
+This version keeps your current project structure intact, but improves the
+processed TruthfulQA output so later stages can reliably use parsed answer lists.
 
 Outputs
 -------
@@ -13,26 +12,11 @@ Outputs
 - data/processed/truthfulqa_cleaned.csv
 - results/metrics_baseline.json
 
-Run (from project root)
------------------------
+Run
+---
 python scripts/run_project.py \
   --medhallu_path data/raw/medhallu_data.csv \
   --truthfulqa_path data/raw/TruthfulQA.csv
-
-Optional
---------
---out_processed_dir data/processed
---out_results_dir results
---max_rows_med 500
---max_rows_truth 200
-
-Notes
------
-* MedHallu rows may span multiple lines because the Knowledge field is a quoted
-  string containing a Python-like list with commas/newlines. We reconstruct rows
-  by accumulating lines until we can parse exactly 6 CSV fields.
-* Baseline evaluation here is intentionally simple to verify the pipeline end-to-end.
-  You will replace the 'system output' with your generation agent outputs later.
 """
 
 from __future__ import annotations
@@ -52,13 +36,12 @@ import pandas as pd
 # -----------------------------
 # Text utilities
 # -----------------------------
-
 _whitespace_re = re.compile(r"\s+")
 _zero_width_re = re.compile(r"[\u200B-\u200D\uFEFF]")
 
 
 def normalize_text(s: object) -> str:
-    """Normalize text for storage: strip, collapse whitespace."""
+    """Normalize text for storage."""
     if s is None:
         return ""
     s = str(s)
@@ -69,7 +52,7 @@ def normalize_text(s: object) -> str:
 
 
 def normalize_for_match(s: object) -> str:
-    """More aggressive normalization for matching answers."""
+    """Normalize more aggressively for answer matching."""
     s = normalize_text(s).lower()
     s = s.strip(" \t\n\r\"'`.,;:!?()[]{}")
     s = _whitespace_re.sub(" ", s)
@@ -77,14 +60,14 @@ def normalize_for_match(s: object) -> str:
 
 
 def split_multi_answers(raw: object) -> List[str]:
-    """Split TruthfulQA answer lists into normalized strings."""
+    """Split TruthfulQA answer lists into clean strings."""
     if raw is None or (isinstance(raw, float) and pd.isna(raw)):
         return []
     s = str(raw).strip()
     if not s:
         return []
 
-    # Common delimiters seen in TruthfulQA exports
+    # Most common delimiters in exported files
     if ";" in s:
         parts = s.split(";")
     elif "|" in s:
@@ -97,14 +80,13 @@ def split_multi_answers(raw: object) -> List[str]:
 
 
 def parse_medhallu_knowledge_field(k: object) -> str:
-    """Parse MedHallu Knowledge column: stringified list -> joined evidence text."""
+    """Parse MedHallu Knowledge column from stringified list to joined evidence text."""
     if k is None or (isinstance(k, float) and pd.isna(k)):
         return ""
     s = str(k).strip()
     if not s:
         return ""
 
-    # Most rows look like: "['fact 1', 'fact 2', ...]"
     if s.startswith("[") and s.endswith("]"):
         try:
             lst = ast.literal_eval(s)
@@ -119,7 +101,6 @@ def parse_medhallu_knowledge_field(k: object) -> str:
 # -----------------------------
 # Dataset loaders
 # -----------------------------
-
 MEDHALLU_COLUMNS = [
     "Question",
     "Knowledge",
@@ -131,7 +112,7 @@ MEDHALLU_COLUMNS = [
 
 
 def load_medhallu_robust(path: Path, max_rows: Optional[int] = None) -> pd.DataFrame:
-    """Load MedHallu using a robust multi-line CSV reconstruction strategy."""
+    """Load MedHallu using robust multi-line CSV reconstruction."""
     path = Path(path)
     if not path.exists():
         raise FileNotFoundError(f"MedHallu file not found: {path}")
@@ -146,8 +127,7 @@ def load_medhallu_robust(path: Path, max_rows: Optional[int] = None) -> pd.DataF
             return None
 
     with path.open("r", encoding="utf-8", errors="replace") as f:
-        # discard header
-        _ = f.readline()
+        _ = f.readline()  # discard header
 
         for line in f:
             line = line.rstrip("\n")
@@ -163,11 +143,9 @@ def load_medhallu_robust(path: Path, max_rows: Optional[int] = None) -> pd.DataF
                 if max_rows is not None and len(records) >= max_rows:
                     break
             else:
-                # prevent runaway buffers on corrupted rows
                 if len(buffer) > 2_000_000:
                     buffer = ""
 
-        # best-effort parse any remaining buffer
         if buffer:
             parsed = try_parse(buffer)
             if parsed is not None and len(parsed) == 6:
@@ -175,7 +153,6 @@ def load_medhallu_robust(path: Path, max_rows: Optional[int] = None) -> pd.DataF
 
     df = pd.DataFrame(records, columns=MEDHALLU_COLUMNS)
 
-    # Clean / normalize
     df["Question"] = df["Question"].map(normalize_text)
     df["Knowledge"] = df["Knowledge"].map(parse_medhallu_knowledge_field)
     df["Ground Truth"] = df["Ground Truth"].map(normalize_text)
@@ -183,7 +160,7 @@ def load_medhallu_robust(path: Path, max_rows: Optional[int] = None) -> pd.DataF
     df["Hallucinated Answer"] = df["Hallucinated Answer"].map(normalize_text)
     df["Category of Hallucination"] = df["Category of Hallucination"].map(normalize_text)
 
-    # Convenience column for retrieval stage
+    # Convenience alias for future stages
     df["knowledge_text"] = df["Knowledge"]
 
     df = df[df["Question"].astype(bool)].reset_index(drop=True)
@@ -194,7 +171,7 @@ TRUTHFULQA_REQUIRED = ["Question", "Best Answer", "Correct Answers", "Incorrect 
 
 
 def load_truthfulqa(path: Path, max_rows: Optional[int] = None) -> pd.DataFrame:
-    """Load TruthfulQA and materialize correct/incorrect lists."""
+    """Load TruthfulQA and materialize parsed answer lists."""
     path = Path(path)
     if not path.exists():
         raise FileNotFoundError(f"TruthfulQA file not found: {path}")
@@ -212,10 +189,11 @@ def load_truthfulqa(path: Path, max_rows: Optional[int] = None) -> pd.DataFrame:
     df["Question"] = df["Question"].map(normalize_text)
     df["Best Answer"] = df["Best Answer"].map(normalize_text)
 
+    # Parsed lists
     df["correct_list"] = df["Correct Answers"].map(split_multi_answers)
     df["incorrect_list"] = df["Incorrect Answers"].map(split_multi_answers)
 
-    # Add best answer into correct list if it's not already there (useful for some exports)
+    # Ensure Best Answer is included in correct list if missing
     def add_best(row: pd.Series) -> List[str]:
         best = normalize_text(row.get("Best Answer", ""))
         lst = list(row.get("correct_list", []) or [])
@@ -225,15 +203,27 @@ def load_truthfulqa(path: Path, max_rows: Optional[int] = None) -> pd.DataFrame:
 
     df["correct_list"] = df.apply(add_best, axis=1)
 
+    # Explicit JSON-safe columns for downstream stages
+    df["correct_list_json"] = df["correct_list"].apply(
+        lambda x: json.dumps(x, ensure_ascii=False)
+    )
+    df["incorrect_list_json"] = df["incorrect_list"].apply(
+        lambda x: json.dumps(x, ensure_ascii=False)
+    )
+
+    # Useful normalized helper columns for downstream evaluation/debugging
+    df["best_answer_normalized"] = df["Best Answer"].map(normalize_for_match)
+    df["correct_list_normalized_json"] = df["correct_list"].apply(
+        lambda xs: json.dumps([normalize_for_match(x) for x in xs if normalize_for_match(x)], ensure_ascii=False)
+    )
+
     df = df[df["Question"].astype(bool)].reset_index(drop=True)
     return df
 
 
 # -----------------------------
-# Metrics (per proposal: precision, recall, F1, correction accuracy, hallucination rate)
+# Metrics
 # -----------------------------
-
-
 @dataclass
 class Metrics:
     precision: float
@@ -268,25 +258,11 @@ def compute_detection_metrics(tp: int, fp: int, fn: int) -> Tuple[float, float, 
 
 
 def evaluate_medhallu_baseline(df: pd.DataFrame) -> Metrics:
-    """Baseline for MedHallu.
-
-    Ground truth:
-      - The provided 'Hallucinated Answer' is incorrect by dataset construction.
-      - GT answer is in 'Ground Truth'.
-
-    Baseline system behavior (trivial, for pipeline validation):
-      - System output = Hallucinated Answer
-      - Detector always flags as hallucination
-      - Corrector replaces with Ground Truth
-
-    This yields perfect metrics but validates the evaluation pipeline.
-    """
+    """Simple baseline for pipeline validation."""
     total = int(len(df))
     tp = total
     fp = 0
     fn = 0
-
-    # correction is always GT
     correction_correct = total
 
     precision, recall, f1 = compute_detection_metrics(tp, fp, fn)
@@ -307,19 +283,9 @@ def evaluate_medhallu_baseline(df: pd.DataFrame) -> Metrics:
 
 
 def evaluate_truthfulqa_baseline(df: pd.DataFrame) -> Metrics:
-    """Naive baseline for TruthfulQA.
-
-    We treat the dataset's 'Best Answer' as the system output (baseline).
-    We mark it hallucinated if it does not match any entry in correct_list.
-
-    Detector:
-      - predict hallucination if not in correct_list
-
-    Corrector:
-      - if hallucinated, replace with the first correct answer
-
-    Note: For many TruthfulQA exports, Best Answer is usually correct, so the
-    hallucination rate may be low.
+    """
+    Baseline for TruthfulQA using parsed correct_list.
+    We treat Best Answer as system output.
     """
     tp = fp = fn = 0
     total = 0
@@ -331,12 +297,10 @@ def evaluate_truthfulqa_baseline(df: pd.DataFrame) -> Metrics:
         response = normalize_for_match(row.get("Best Answer", ""))
         corrects = [normalize_for_match(x) for x in (row.get("correct_list", []) or [])]
 
-        # ground-truth hallucination label (relative to correct answers)
         is_hallucinated = response not in corrects
         if is_hallucinated:
             hallucinated_count += 1
 
-        # baseline detector
         pred_hallucination = is_hallucinated
 
         if pred_hallucination and is_hallucinated:
@@ -346,12 +310,10 @@ def evaluate_truthfulqa_baseline(df: pd.DataFrame) -> Metrics:
         elif (not pred_hallucination) and is_hallucinated:
             fn += 1
 
-        # baseline correction
         if pred_hallucination:
             corrected = corrects[0] if corrects else ""
             correction_correct += 1 if corrected in corrects else 0
         else:
-            # if not hallucinated, we keep response and it's correct by definition
             correction_correct += 1
 
     precision, recall, f1 = compute_detection_metrics(tp, fp, fn)
@@ -374,13 +336,15 @@ def evaluate_truthfulqa_baseline(df: pd.DataFrame) -> Metrics:
 # -----------------------------
 # Persist processed artifacts
 # -----------------------------
-
-
 def ensure_dir(p: Path) -> None:
     p.mkdir(parents=True, exist_ok=True)
 
 
-def save_processed(med_df: pd.DataFrame, truth_df: pd.DataFrame, out_dir: Path) -> Tuple[Path, Path]:
+def save_processed(
+    med_df: pd.DataFrame,
+    truth_df: pd.DataFrame,
+    out_dir: Path,
+) -> Tuple[Path, Path]:
     """Save cleaned datasets as CSV for reproducibility."""
     out_dir = Path(out_dir)
     ensure_dir(out_dir)
@@ -388,13 +352,8 @@ def save_processed(med_df: pd.DataFrame, truth_df: pd.DataFrame, out_dir: Path) 
     med_out = out_dir / "medhallu_cleaned.csv"
     truth_out = out_dir / "truthfulqa_cleaned.csv"
 
-    # For TruthfulQA, keep lists as JSON strings (CSV-safe) while keeping raw columns too
-    truth_to_save = truth_df.copy()
-    truth_to_save["correct_list"] = truth_to_save["correct_list"].apply(lambda x: json.dumps(x, ensure_ascii=False))
-    truth_to_save["incorrect_list"] = truth_to_save["incorrect_list"].apply(lambda x: json.dumps(x, ensure_ascii=False))
-
     med_df.to_csv(med_out, index=False)
-    truth_to_save.to_csv(truth_out, index=False)
+    truth_df.to_csv(truth_out, index=False)
 
     return med_out, truth_out
 
@@ -411,8 +370,6 @@ def save_metrics(metrics: Dict[str, Metrics], out_dir: Path) -> Path:
 # -----------------------------
 # Main
 # -----------------------------
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Stage-1 dataset preparation + baseline metrics for MedHallu and TruthfulQA"
@@ -422,12 +379,12 @@ def main() -> None:
     parser.add_argument(
         "--out_processed_dir",
         default="data/processed",
-        help="Where to write cleaned datasets (default: data/processed)",
+        help="Where to write cleaned datasets",
     )
     parser.add_argument(
         "--out_results_dir",
         default="results",
-        help="Where to write metrics JSON (default: results)",
+        help="Where to write metrics JSON",
     )
     parser.add_argument("--max_rows_med", type=int, default=0, help="Limit MedHallu rows (0 = all)")
     parser.add_argument("--max_rows_truth", type=int, default=0, help="Limit TruthfulQA rows (0 = all)")

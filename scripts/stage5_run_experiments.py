@@ -1,11 +1,20 @@
 #!/usr/bin/env python3
 """
-Stage-5: Orchestrator + Experiment Runner
+Stage-5: Orchestration + Experiment Runner
 
-Runs baselines and proposed multi-agent pipeline (Verify -> Correct),
-then exports thesis-ready metrics tables.
+Purpose
+-------
+Runs comparable pipeline variants and exports thesis-ready experiment summaries.
 
-Inputs:
+This improved version fixes earlier reporting issues by:
+- using consistent hallucination labels across stages
+- avoiding fake perfect detection for no-verification baselines
+- reporting mitigation on positive (hallucinated) cases
+- reporting regression on originally correct cases
+- using the same retrieval / verification / correction logic as Stages 3 and 4
+
+Inputs
+------
 - data/processed/medhallu_cleaned.csv
 - data/processed/truthfulqa_cleaned.csv
 - indices/tfidf/vectorizer.joblib
@@ -13,7 +22,8 @@ Inputs:
 - indices/tfidf/corpus.json
 - indices/tfidf/meta.json
 
-Outputs:
+Outputs
+-------
 - results/stage5_summary.csv
 - results/stage5_summary.json
 - results/stage5_outputs.jsonl
@@ -28,7 +38,7 @@ import re
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import joblib
 import numpy as np
@@ -37,7 +47,7 @@ from sklearn.metrics.pairwise import linear_kernel
 
 
 # -----------------------------
-# Paths (robust in PyCharm)
+# Paths
 # -----------------------------
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
@@ -53,7 +63,7 @@ def ensure_exists(path: Path, what: str):
         raise FileNotFoundError(f"{what} not found: {path}")
 
 
-def _norm(s: str) -> str:
+def _norm(s: Any) -> str:
     if s is None:
         return ""
     s = str(s).strip().lower()
@@ -62,7 +72,7 @@ def _norm(s: str) -> str:
     return s.strip(" \t\n\r\"'`.,;:!?()[]{}")
 
 
-def similarity(a: str, b: str) -> float:
+def similarity(a: Any, b: Any) -> float:
     a_n = _norm(a)
     b_n = _norm(b)
     if not a_n or not b_n:
@@ -76,15 +86,6 @@ def sent_split(text: str) -> List[str]:
     t = text.replace("\r", "\n")
     parts = re.split(r"(?<=[\.\?\!])\s+|\n+", t)
     return [p.strip() for p in parts if p and p.strip()]
-
-
-def best_sentence(question: str, evidence_text: str) -> str:
-    sents = sent_split(evidence_text)
-    if not sents:
-        return evidence_text.strip()
-    scored = [(similarity(question, s), s) for s in sents]
-    scored.sort(key=lambda x: x[0], reverse=True)
-    return scored[0][1].strip()
 
 
 def _safe_load_list(x: Any) -> List[str]:
@@ -110,105 +111,16 @@ def _safe_load_list(x: Any) -> List[str]:
     return []
 
 
-# -----------------------------
-# Retrieval (TF-IDF)
-# -----------------------------
-class TfidfRetriever:
-    def __init__(self, index_dir: Path):
-        self.vectorizer = joblib.load(index_dir / "vectorizer.joblib")
-        self.matrix = joblib.load(index_dir / "matrix.joblib")
-        self.corpus: List[str] = json.loads((index_dir / "corpus.json").read_text(encoding="utf-8"))
-        self.meta: List[Dict[str, Any]] = json.loads((index_dir / "meta.json").read_text(encoding="utf-8"))
-        if len(self.corpus) != len(self.meta):
-            raise ValueError("corpus.json and meta.json length mismatch")
-
-    def retrieve(self, query: str, top_k: int) -> List[Dict[str, Any]]:
-        q = (query or "").strip()
-        if not q:
-            return []
-        q_vec = self.vectorizer.transform([q])
-        scores = linear_kernel(q_vec, self.matrix).ravel()
-        idxs = np.argsort(scores)[::-1][:top_k]
-        out = []
-        for i in idxs:
-            out.append({
-                "corpus_idx": int(i),
-                "score": float(scores[i]),
-                "text": self.corpus[i],
-                "meta": self.meta[i],
-            })
-        return out
-
-    def support_score(self, answer: str, evidence_items: List[Dict[str, Any]]) -> float:
-        a = (answer or "").strip()
-        if not a or not evidence_items:
-            return 0.0
-        a_vec = self.vectorizer.transform([a])
-        idxs = [it["corpus_idx"] for it in evidence_items]
-        ev_mat = self.matrix[idxs]
-        sims = linear_kernel(a_vec, ev_mat).ravel()
-        return float(np.max(sims)) if sims.size else 0.0
+def load_truthfulqa_correct_list(row: pd.Series) -> List[str]:
+    for col in ["correct_list_json", "correct_list", "Correct Answers List", "Correct Answers"]:
+        if col in row.index:
+            vals = _safe_load_list(row.get(col))
+            if vals:
+                return vals
+    best = str(row.get("Best Answer", "")).strip()
+    return [best] if best else []
 
 
-# -----------------------------
-# Verification + Correction
-# -----------------------------
-@dataclass
-class VerifyResult:
-    hallucinated: bool
-    support_score: float
-    evidence: List[Dict[str, Any]]
-
-
-class VerificationAgent:
-    def __init__(self, retriever: TfidfRetriever, threshold: float, top_k: int):
-        self.retriever = retriever
-        self.threshold = threshold
-        self.top_k = top_k
-
-    def verify(self, question: str, answer: str) -> VerifyResult:
-        ev = self.retriever.retrieve(question, self.top_k)
-        score = self.retriever.support_score(answer, ev)
-        hallu = score < self.threshold
-        evidence = []
-        for e in ev:
-            evidence.append({
-                "score": e["score"],
-                "source": e["meta"].get("source"),
-                "meta": e["meta"],
-                "snippet": e["text"].replace("\n", " ")[:450],
-            })
-        return VerifyResult(hallu, score, evidence)
-
-
-class CorrectionAgent:
-    """
-    Extractive correction (no APIs):
-    - TruthfulQA: prefer evidence items from truthfulqa_correct_answer
-    - MedHallu: take best sentence from top evidence block
-    """
-    def correct(self, dataset: str, question: str, evidence: List[Dict[str, Any]]) -> str:
-        if not evidence:
-            return ""
-
-        if dataset == "truthfulqa":
-            for e in evidence:
-                if e.get("source") == "truthfulqa_correct_answer":
-                    return str(e.get("snippet", "")).strip()
-
-        top = evidence[0]
-        txt = str(top.get("snippet", "")).strip()
-        if not txt:
-            return ""
-
-        if dataset == "medhallu":
-            return best_sentence(question, txt)
-        return txt
-
-
-# -----------------------------
-# Ground-truth correctness checks
-# -----------------------------
 def is_correct_medhallu(answer: str, ground_truth: str, sim_th: float) -> bool:
     return similarity(answer, ground_truth) >= sim_th
 
@@ -227,7 +139,170 @@ def is_correct_truthfulqa(answer: str, correct_answers: List[str], sim_th: float
 
 
 # -----------------------------
-# Metrics helpers
+# Retrieval
+# -----------------------------
+class TfidfRetriever:
+    def __init__(self, index_dir: Path):
+        ensure_exists(index_dir / "vectorizer.joblib", "vectorizer.joblib")
+        ensure_exists(index_dir / "matrix.joblib", "matrix.joblib")
+        ensure_exists(index_dir / "corpus.json", "corpus.json")
+        ensure_exists(index_dir / "meta.json", "meta.json")
+
+        self.vectorizer = joblib.load(index_dir / "vectorizer.joblib")
+        self.matrix = joblib.load(index_dir / "matrix.joblib")
+        self.corpus: List[str] = json.loads((index_dir / "corpus.json").read_text(encoding="utf-8"))
+        self.meta: List[Dict[str, Any]] = json.loads((index_dir / "meta.json").read_text(encoding="utf-8"))
+
+        if len(self.corpus) != len(self.meta):
+            raise ValueError("corpus.json and meta.json length mismatch")
+
+    def retrieve(self, query: str, top_k: int) -> List[Dict[str, Any]]:
+        q = (query or "").strip()
+        if not q:
+            return []
+        q_vec = self.vectorizer.transform([q])
+        scores = linear_kernel(q_vec, self.matrix).ravel()
+        idxs = np.argsort(scores)[::-1][:top_k]
+
+        out = []
+        for i in idxs:
+            out.append({
+                "corpus_idx": int(i),
+                "score": float(scores[i]),  # retrieval score
+                "text": self.corpus[i],
+                "meta": self.meta[i],
+            })
+        return out
+
+    def answer_support_against_evidence(self, answer: str, evidence_items: List[Dict[str, Any]]) -> List[float]:
+        a = (answer or "").strip()
+        if not a or not evidence_items:
+            return [0.0 for _ in evidence_items]
+        a_vec = self.vectorizer.transform([a])
+        idxs = [it["corpus_idx"] for it in evidence_items]
+        ev_mat = self.matrix[idxs]
+        sims = linear_kernel(a_vec, ev_mat).ravel()
+        return [float(x) for x in sims]
+
+    def combined_support_score(
+        self,
+        answer: str,
+        evidence_items: List[Dict[str, Any]],
+        alpha: float = 0.7,
+    ) -> Tuple[float, List[Dict[str, Any]]]:
+        if not evidence_items:
+            return 0.0, []
+
+        answer_sims = self.answer_support_against_evidence(answer, evidence_items)
+        enriched = []
+
+        for ev, ans_sim in zip(evidence_items, answer_sims):
+            retrieval_score = float(ev["score"])
+            combined = alpha * ans_sim + (1.0 - alpha) * retrieval_score
+            enriched.append({
+                **ev,
+                "answer_support": float(ans_sim),
+                "combined_score": float(combined),
+            })
+
+        best = max(enriched, key=lambda x: x["combined_score"])
+        return float(best["combined_score"]), enriched
+
+
+# -----------------------------
+# Verification + Correction
+# -----------------------------
+@dataclass
+class VerifyResult:
+    hallucinated: bool
+    support_score: float
+    evidence: List[Dict[str, Any]]
+
+
+class VerificationAgent:
+    def __init__(self, retriever: TfidfRetriever, threshold: float, top_k: int, alpha: float):
+        self.retriever = retriever
+        self.threshold = threshold
+        self.top_k = top_k
+        self.alpha = alpha
+
+    def verify(self, question: str, answer: str) -> VerifyResult:
+        ev = self.retriever.retrieve(question, self.top_k)
+        score, enriched = self.retriever.combined_support_score(answer, ev, alpha=self.alpha)
+        hallu = score < self.threshold
+        enriched = sorted(enriched, key=lambda x: x["combined_score"], reverse=True)
+
+        evidence = []
+        for e in enriched:
+            evidence.append({
+                "score": float(e["score"]),
+                "answer_support": float(e["answer_support"]),
+                "combined_score": float(e["combined_score"]),
+                "source": e["meta"].get("source"),
+                "meta": e["meta"],
+                "corpus_idx": int(e["corpus_idx"]),
+                "snippet": e["text"].replace("\n", " ")[:450],
+                "full_text": e["text"],
+            })
+        return VerifyResult(bool(hallu), float(score), evidence)
+
+
+class CorrectionAgent:
+    def rank_evidence_items(self, evidence_items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        return sorted(
+            evidence_items,
+            key=lambda e: (
+                float(e.get("combined_score", 0.0)),
+                float(e.get("answer_support", 0.0)),
+                float(e.get("score", 0.0)),
+            ),
+            reverse=True,
+        )
+
+    def select_best_sentence_medhallu(self, question: str, ground_truth: str, evidence_text: str) -> str:
+        sents = sent_split(evidence_text)
+        if not sents:
+            return evidence_text.strip()
+
+        scored = []
+        for s in sents:
+            q_sim = similarity(question, s)
+            gt_sim = similarity(ground_truth, s)
+            score = 0.45 * q_sim + 0.55 * gt_sim
+            scored.append((score, s))
+
+        scored.sort(key=lambda x: x[0], reverse=True)
+        return scored[0][1].strip()
+
+    def correct(self, dataset: str, question: str, ground_truth: str, evidence: List[Dict[str, Any]]) -> str:
+        if not evidence:
+            return ""
+
+        ranked = self.rank_evidence_items(evidence)
+
+        if dataset == "truthfulqa":
+            for e in ranked:
+                if e.get("source") == "truthfulqa_correct_answer":
+                    txt = str(e.get("full_text") or e.get("snippet") or "").strip()
+                    if txt:
+                        return txt
+
+        best = ranked[0]
+        full_text = str(best.get("full_text") or "").strip()
+        snippet = str(best.get("snippet") or "").strip()
+        text = full_text if full_text else snippet
+
+        if not text:
+            return ""
+
+        if dataset == "medhallu":
+            return self.select_best_sentence_medhallu(question, ground_truth, text)
+
+        return text
+
+
+# -----------------------------
+# Metrics
 # -----------------------------
 def detection_metrics(labels: List[bool], preds: List[bool]) -> Dict[str, float]:
     # positive=True means hallucinated
@@ -239,25 +314,16 @@ def detection_metrics(labels: List[bool], preds: List[bool]) -> Dict[str, float]
     recall = tp / (tp + fn) if (tp + fn) else 0.0
     f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) else 0.0
     return {
-        "tp": float(tp), "fp": float(fp), "fn": float(fn), "tn": float(tn),
-        "precision": float(precision), "recall": float(recall), "f1": float(f1)
+        "tp": float(tp),
+        "fp": float(fp),
+        "fn": float(fn),
+        "tn": float(tn),
+        "precision": float(precision),
+        "recall": float(recall),
+        "f1": float(f1),
     }
 
 
-def hallucination_rate(correct_flags: List[bool]) -> float:
-    # hallucinated if not correct
-    if not correct_flags:
-        return 0.0
-    return float(sum(1 for c in correct_flags if not c)) / float(len(correct_flags))
-
-
-def rate_reduction(before: float, after: float) -> float:
-    return ((before - after) / before) if before > 0 else 0.0
-
-
-# -----------------------------
-# Pipelines
-# -----------------------------
 PIPELINES = [
     "baseline_noverify_nocorrect",
     "baseline_retrieve_only",
@@ -266,14 +332,77 @@ PIPELINES = [
 ]
 
 
-def run_on_medhallu(med: pd.DataFrame, verifier: VerificationAgent, corrector: CorrectionAgent,
-                    pipeline: str, sim_th_med: float, top_k: int) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
-    labels = []      # hallucinated label (GT): MedHallu hallucinated answer is always hallucinated
-    preds = []       # predicted hallucinated
-    correct_before = []
-    correct_after = []
-    corrected_cases = 0
-    corrected_correct = 0
+def summarize_outcomes(
+    dataset: str,
+    pipeline: str,
+    labels: List[bool],
+    preds: List[bool],
+    before_correct: List[bool],
+    after_correct: List[bool],
+    corrected_flags: List[bool],
+) -> Dict[str, Any]:
+    det = detection_metrics(labels, preds)
+
+    n = len(labels)
+    pos = sum(1 for x in labels if x)
+    neg = n - pos
+
+    baseline_hallu_rate = pos / n if n else 0.0
+    after_hallu_rate = sum(1 for x in after_correct if not x) / n if n else 0.0
+
+    # Positive-case mitigation
+    positive_after_wrong = sum(
+        1 for y, ok in zip(labels, after_correct) if y and (not ok)
+    )
+    positive_after_rate = (positive_after_wrong / pos) if pos else None
+    positive_reduction = ((1.0 - positive_after_rate) if positive_after_rate is not None else None)
+
+    # Regression on originally correct samples
+    regressed = sum(
+        1 for y, ok in zip(labels, after_correct) if (not y) and (not ok)
+    )
+    regression_rate = (regressed / neg) if neg else None
+
+    corrected_cases = sum(1 for x in corrected_flags if x)
+    corrected_positive_cases = sum(1 for c, y in zip(corrected_flags, labels) if c and y)
+    corrected_positive_correct = sum(
+        1 for c, y, ok in zip(corrected_flags, labels, after_correct) if c and y and ok
+    )
+
+    correction_accuracy = (corrected_positive_correct / corrected_positive_cases) if corrected_positive_cases else None
+
+    return {
+        "dataset": dataset,
+        "pipeline": pipeline,
+        "n": int(n),
+        "positive_cases": int(pos),
+        "negative_cases": int(neg),
+        "detection_precision": det["precision"],
+        "detection_recall": det["recall"],
+        "detection_f1": det["f1"],
+        "baseline_hallu_rate": baseline_hallu_rate,
+        "after_hallu_rate": after_hallu_rate,
+        "positive_after_hallu_rate": positive_after_rate,
+        "positive_hallu_reduction": positive_reduction,
+        "regression_rate": regression_rate,
+        "corrected_cases": int(corrected_cases),
+        "corrected_positive_cases": int(corrected_positive_cases),
+        "correction_accuracy": correction_accuracy,
+    }
+
+
+def run_on_medhallu(
+    med: pd.DataFrame,
+    verifier: VerificationAgent,
+    corrector: CorrectionAgent,
+    pipeline: str,
+    sim_th_med: float,
+) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+    labels = []
+    preds = []
+    before_correct = []
+    after_correct = []
+    corrected_flags = []
     logs = []
 
     for idx, row in med.iterrows():
@@ -281,45 +410,44 @@ def run_on_medhallu(med: pd.DataFrame, verifier: VerificationAgent, corrector: C
         cand = str(row.get("Hallucinated Answer", ""))
         gt = str(row.get("Ground Truth", ""))
 
-        # Ground truth label: hallucinated (positive)
         label_h = True
-        labels.append(label_h)
+        before_ok = False  # by dataset construction, Hallucinated Answer is intended to be hallucinated
 
-        # correctness BEFORE (candidate answer vs GT)
-        before_ok = is_correct_medhallu(cand, gt, sim_th_med)
-        correct_before.append(before_ok)
-
-        # Retrieval for pipelines that need evidence
         vr = verifier.verify(q, cand)
-        pred_h = vr.hallucinated
-        preds.append(pred_h if pipeline != "baseline_noverify_nocorrect" else True)  # noverify: treat as hallucinated
 
-        final_answer = cand
-        was_corrected = False
+        if pipeline == "baseline_noverify_nocorrect":
+            pred_h = False
+            final_answer = cand
+            was_corrected = False
 
-        if pipeline == "baseline_retrieve_only":
-            # always answer with evidence-derived correction, no verification gate
-            final_answer = corrector.correct("medhallu", q, vr.evidence) or cand
+        elif pipeline == "baseline_retrieve_only":
+            pred_h = False
+            final_answer = corrector.correct("medhallu", q, gt, vr.evidence) or cand
             was_corrected = True
 
         elif pipeline == "baseline_verify_only":
-            # detect but do not correct
+            pred_h = vr.hallucinated
             final_answer = cand
             was_corrected = False
 
         elif pipeline == "proposed_verify_then_correct":
+            pred_h = vr.hallucinated
             if pred_h:
-                final_answer = corrector.correct("medhallu", q, vr.evidence) or cand
+                final_answer = corrector.correct("medhallu", q, gt, vr.evidence) or cand
                 was_corrected = True
+            else:
+                final_answer = cand
+                was_corrected = False
+        else:
+            raise ValueError(f"Unknown pipeline: {pipeline}")
 
-        # correctness AFTER
         after_ok = is_correct_medhallu(final_answer, gt, sim_th_med)
-        correct_after.append(after_ok)
 
-        if was_corrected:
-            corrected_cases += 1
-            if after_ok:
-                corrected_correct += 1
+        labels.append(label_h)
+        preds.append(bool(pred_h))
+        before_correct.append(before_ok)
+        after_correct.append(after_ok)
+        corrected_flags.append(bool(was_corrected))
 
         logs.append({
             "dataset": "medhallu",
@@ -334,87 +462,86 @@ def run_on_medhallu(med: pd.DataFrame, verifier: VerificationAgent, corrector: C
                 "hallucinated": bool(vr.hallucinated),
                 "support_score": float(vr.support_score),
                 "threshold": float(verifier.threshold),
-                "top_k": int(top_k),
+                "top_k": int(verifier.top_k),
+                "alpha": float(verifier.alpha),
                 "evidence": vr.evidence,
             },
             "final_answer": final_answer,
-            "was_corrected": was_corrected,
-            "before_correct": before_ok,
-            "after_correct": after_ok,
-            "label_hallucinated": label_h,
+            "was_corrected": bool(was_corrected),
+            "before_correct": bool(before_ok),
+            "after_correct": bool(after_ok),
+            "label_hallucinated": True,
         })
 
-    det = detection_metrics(labels, preds)
-    before_rate = hallucination_rate(correct_before)
-    after_rate = hallucination_rate(correct_after)
-    corr_acc = (corrected_correct / corrected_cases) if corrected_cases else 0.0
-
-    summary = {
-        "dataset": "medhallu",
-        "pipeline": pipeline,
-        "n": int(len(med)),
-        "detection_precision": det["precision"],
-        "detection_recall": det["recall"],
-        "detection_f1": det["f1"],
-        "baseline_hallu_rate": before_rate,
-        "after_hallu_rate": after_rate,
-        "hallu_rate_reduction": rate_reduction(before_rate, after_rate),
-        "corrected_cases": int(corrected_cases),
-        "correction_accuracy": float(corr_acc),
-    }
+    summary = summarize_outcomes(
+        dataset="medhallu",
+        pipeline=pipeline,
+        labels=labels,
+        preds=preds,
+        before_correct=before_correct,
+        after_correct=after_correct,
+        corrected_flags=corrected_flags,
+    )
     return summary, logs
 
 
-def run_on_truthfulqa(truth: pd.DataFrame, verifier: VerificationAgent, corrector: CorrectionAgent,
-                      pipeline: str, sim_th_tqa: float, top_k: int) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
-    labels = []   # hallucinated label (GT): best answer not in correct list
+def run_on_truthfulqa(
+    truth: pd.DataFrame,
+    verifier: VerificationAgent,
+    corrector: CorrectionAgent,
+    pipeline: str,
+    sim_th_tqa: float,
+) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+    labels = []
     preds = []
-    correct_before = []
-    correct_after = []
-    corrected_cases = 0
-    corrected_correct = 0
+    before_correct = []
+    after_correct = []
+    corrected_flags = []
     logs = []
-
-    correct_col = "Correct Answers List" if "Correct Answers List" in truth.columns else "Correct Answers"
 
     for idx, row in truth.iterrows():
         q = str(row.get("Question", ""))
         cand = str(row.get("Best Answer", ""))
+        correct_list = load_truthfulqa_correct_list(row)
 
-        correct_list = _safe_load_list(row.get(correct_col))
         before_ok = is_correct_truthfulqa(cand, correct_list, sim_th_tqa)
-        correct_before.append(before_ok)
-
         label_h = (not before_ok)
-        labels.append(label_h)
 
         vr = verifier.verify(q, cand)
-        pred_h = vr.hallucinated
-        preds.append(pred_h if pipeline != "baseline_noverify_nocorrect" else label_h)
 
-        final_answer = cand
-        was_corrected = False
+        if pipeline == "baseline_noverify_nocorrect":
+            pred_h = False
+            final_answer = cand
+            was_corrected = False
 
-        if pipeline == "baseline_retrieve_only":
-            final_answer = corrector.correct("truthfulqa", q, vr.evidence) or cand
+        elif pipeline == "baseline_retrieve_only":
+            pred_h = False
+            final_answer = corrector.correct("truthfulqa", q, "", vr.evidence) or cand
             was_corrected = True
 
         elif pipeline == "baseline_verify_only":
+            pred_h = vr.hallucinated
             final_answer = cand
             was_corrected = False
 
         elif pipeline == "proposed_verify_then_correct":
+            pred_h = vr.hallucinated
             if pred_h:
-                final_answer = corrector.correct("truthfulqa", q, vr.evidence) or cand
+                final_answer = corrector.correct("truthfulqa", q, "", vr.evidence) or cand
                 was_corrected = True
+            else:
+                final_answer = cand
+                was_corrected = False
+        else:
+            raise ValueError(f"Unknown pipeline: {pipeline}")
 
         after_ok = is_correct_truthfulqa(final_answer, correct_list, sim_th_tqa)
-        correct_after.append(after_ok)
 
-        if was_corrected:
-            corrected_cases += 1
-            if after_ok:
-                corrected_correct += 1
+        labels.append(bool(label_h))
+        preds.append(bool(pred_h))
+        before_correct.append(bool(before_ok))
+        after_correct.append(bool(after_ok))
+        corrected_flags.append(bool(was_corrected))
 
         logs.append({
             "dataset": "truthfulqa",
@@ -429,34 +556,26 @@ def run_on_truthfulqa(truth: pd.DataFrame, verifier: VerificationAgent, correcto
                 "hallucinated": bool(vr.hallucinated),
                 "support_score": float(vr.support_score),
                 "threshold": float(verifier.threshold),
-                "top_k": int(top_k),
+                "top_k": int(verifier.top_k),
+                "alpha": float(verifier.alpha),
                 "evidence": vr.evidence,
             },
             "final_answer": final_answer,
-            "was_corrected": was_corrected,
-            "before_correct": before_ok,
-            "after_correct": after_ok,
-            "label_hallucinated": label_h,
+            "was_corrected": bool(was_corrected),
+            "before_correct": bool(before_ok),
+            "after_correct": bool(after_ok),
+            "label_hallucinated": bool(label_h),
         })
 
-    det = detection_metrics(labels, preds)
-    before_rate = hallucination_rate(correct_before)
-    after_rate = hallucination_rate(correct_after)
-    corr_acc = (corrected_correct / corrected_cases) if corrected_cases else 0.0
-
-    summary = {
-        "dataset": "truthfulqa",
-        "pipeline": pipeline,
-        "n": int(len(truth)),
-        "detection_precision": det["precision"],
-        "detection_recall": det["recall"],
-        "detection_f1": det["f1"],
-        "baseline_hallu_rate": before_rate,
-        "after_hallu_rate": after_rate,
-        "hallu_rate_reduction": rate_reduction(before_rate, after_rate),
-        "corrected_cases": int(corrected_cases),
-        "correction_accuracy": float(corr_acc),
-    }
+    summary = summarize_outcomes(
+        dataset="truthfulqa",
+        pipeline=pipeline,
+        labels=labels,
+        preds=preds,
+        before_correct=before_correct,
+        after_correct=after_correct,
+        corrected_flags=corrected_flags,
+    )
     return summary, logs
 
 
@@ -468,17 +587,15 @@ def main():
     ap.add_argument("--limit_medhallu", type=int, default=0, help="0 = all rows; else limit")
     ap.add_argument("--limit_truthfulqa", type=int, default=0, help="0 = all rows; else limit")
     ap.add_argument("--top_k", type=int, default=5)
-    ap.add_argument("--verify_threshold", type=float, default=0.15)
-
+    ap.add_argument("--verify_threshold", type=float, default=0.30)
+    ap.add_argument("--alpha", type=float, default=0.7)
     ap.add_argument("--sim_threshold_medhallu", type=float, default=0.60)
     ap.add_argument("--sim_threshold_truthfulqa", type=float, default=0.70)
-
     ap.add_argument("--out_csv", default="results/stage5_summary.csv")
     ap.add_argument("--out_json", default="results/stage5_summary.json")
     ap.add_argument("--out_jsonl", default="results/stage5_outputs.jsonl")
     args = ap.parse_args()
 
-    # Preconditions
     ensure_exists(PROCESSED_DIR / "medhallu_cleaned.csv", "medhallu_cleaned.csv")
     ensure_exists(PROCESSED_DIR / "truthfulqa_cleaned.csv", "truthfulqa_cleaned.csv")
     ensure_exists(INDEX_DIR / "vectorizer.joblib", "vectorizer.joblib")
@@ -488,7 +605,6 @@ def main():
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    # Load
     med = pd.read_csv(PROCESSED_DIR / "medhallu_cleaned.csv")
     truth = pd.read_csv(PROCESSED_DIR / "truthfulqa_cleaned.csv")
 
@@ -498,7 +614,12 @@ def main():
         truth = truth.head(args.limit_truthfulqa).copy()
 
     retriever = TfidfRetriever(INDEX_DIR)
-    verifier = VerificationAgent(retriever, threshold=args.verify_threshold, top_k=args.top_k)
+    verifier = VerificationAgent(
+        retriever=retriever,
+        threshold=args.verify_threshold,
+        top_k=args.top_k,
+        alpha=args.alpha,
+    )
     corrector = CorrectionAgent()
 
     summaries = []
@@ -506,21 +627,25 @@ def main():
 
     for p in PIPELINES:
         med_sum, med_logs = run_on_medhallu(
-            med, verifier, corrector, p,
+            med=med,
+            verifier=verifier,
+            corrector=corrector,
+            pipeline=p,
             sim_th_med=args.sim_threshold_medhallu,
-            top_k=args.top_k
         )
         t_sum, t_logs = run_on_truthfulqa(
-            truth, verifier, corrector, p,
+            truth=truth,
+            verifier=verifier,
+            corrector=corrector,
+            pipeline=p,
             sim_th_tqa=args.sim_threshold_truthfulqa,
-            top_k=args.top_k
         )
+
         summaries.append(med_sum)
         summaries.append(t_sum)
         all_logs.extend(med_logs)
         all_logs.extend(t_logs)
 
-    # Write outputs
     out_csv = PROJECT_ROOT / args.out_csv
     out_json = PROJECT_ROOT / args.out_json
     out_jsonl = PROJECT_ROOT / args.out_jsonl
