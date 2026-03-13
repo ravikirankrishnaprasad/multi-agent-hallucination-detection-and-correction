@@ -64,10 +64,15 @@ results/        Experiment outputs, summary metrics, and figures
 The system is implemented as a **multi-stage experimental pipeline**.
 
 Stage 1 – Dataset preprocessing
+
 Stage 2 – Retrieval index construction
+
 Stage 3 – Hallucination verification
+
 Stage 4 – Response correction
+
 Stage 5 – Experiment orchestration
+
 Stage 6 – Result visualization
 
 Key scripts:
