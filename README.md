@@ -34,6 +34,7 @@ The goal is to improve **factual reliability of LLM-generated responses** using 
 The system is evaluated using two publicly available hallucination benchmarks:
 
 • **MedHallu** – medical hallucination detection benchmark
+
 • **TruthfulQA** – adversarial truthfulness evaluation dataset
 
 Due to licensing and dataset size constraints, the raw datasets are **not included in this repository**.
