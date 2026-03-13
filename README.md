@@ -21,12 +21,12 @@ The goal is to improve **factual reliability of LLM-generated responses** using 
 ---
 ## System Architecture
 
-![System Architecture](docs/architecture.png)
+![System Architecture](docs/Architecture.png)
 
 ---
 ## System Workflow
 
-![System Workflow](docs/sequence_diagram.png)
+![System Workflow](docs/SequenceDiagram.png)
 
 ---
 # Datasets
