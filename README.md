@@ -19,7 +19,16 @@ This project proposes a **multi-agent hallucination detection and correction fra
 The goal is to improve **factual reliability of LLM-generated responses** using lightweight verification strategies.
 
 ---
+## System Architecture
 
+![System Architecture](docs/architecture.png)
+
+---
+## System Workflow
+
+![System Workflow](docs/sequence_diagram.png)
+
+---
 # Datasets
 
 The system is evaluated using two publicly available hallucination benchmarks:
