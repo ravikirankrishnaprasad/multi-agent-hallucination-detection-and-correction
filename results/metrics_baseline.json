@@ -1,24 +1,26 @@
 {
-  "medhallu_baseline": {
-    "precision": 1.0,
-    "recall": 1.0,
-    "f1": 1.0,
-    "correction_accuracy": 1.0,
-    "hallucination_rate": 1.0,
-    "num_samples": 9000,
-    "tp": 9000,
-    "fp": 0,
-    "fn": 0
+  "dataset_summary": {
+    "medhallu_rows": 9000,
+    "truthfulqa_rows": 817,
+    "combined_rows": 9817,
+    "positive_label_definition": "1 = hallucinated",
+    "negative_label_definition": "0 = not hallucinated",
+    "class_distribution": {
+      "positive_hallucinated": 9000,
+      "negative_not_hallucinated": 817
+    }
   },
-  "truthfulqa_baseline": {
-    "precision": 0.0,
-    "recall": 0.0,
-    "f1": 0.0,
-    "correction_accuracy": 1.0,
-    "hallucination_rate": 0.0,
-    "num_samples": 817,
-    "tp": 0,
-    "fp": 0,
-    "fn": 0
+  "baseline_all_positive_predictor": {
+    "precision": 0.9167770194560456,
+    "recall": 1.0,
+    "f1": 0.9565818143168412,
+    "accuracy": 0.9167770194560456,
+    "num_samples": 9817,
+    "positive_samples": 9000,
+    "negative_samples": 817,
+    "tp": 9000,
+    "fp": 817,
+    "fn": 0,
+    "tn": 0
   }
 }
