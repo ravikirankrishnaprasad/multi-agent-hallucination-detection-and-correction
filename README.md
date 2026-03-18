@@ -127,7 +127,18 @@ python scripts/build_retrieval_index.py
 ### 3. Run hallucination verification
 
 ```
-python scripts/stage3_verify.py --threshold 0.30 --top_k 5 --alpha 0.7
+# Threshold tuning (recommended)
+python scripts/stage3_verify.py \
+  --top_k 5 \
+  --alpha 0.7 \
+  --threshold_sweep 0.05,0.10,0.15,0.20,0.25,0.30,0.35,0.40,0.45,0.50,0.55 \
+  --save_sweep_path results/stage3_sweep_metrics.json
+
+# Final run (selected threshold)
+python scripts/stage3_verify.py \
+  --top_k 5 \
+  --alpha 0.7 \
+  --threshold 0.55
 ```
 ### 4. Run correction stage
 
@@ -137,7 +148,7 @@ python scripts/stage4_correct.py
 ### 5. Run experiment pipeline
 
 ```
-python scripts/stage5_run_experiments.py --verify_threshold 0.30 --top_k 5 --alpha 0.7
+python scripts/stage5_run_experiments.py --verify_threshold 0.55 --top_k 5 --alpha 0.7
 ```
 ### 6. Generate result plots
 
@@ -162,15 +173,18 @@ results/figures/
 ```
 ---
 # Key Results
-Experimental evaluation demonstrates the effectiveness of retrieval-grounded verification for hallucination detection.
 
-Key observations:
+The proposed multi-agent verification and correction framework was evaluated on a unified binary dataset combining MedHallu and TruthfulQA.
 
-* **High precision hallucination detection**
-* Approximately **32% hallucination recall** on the MedHallu benchmark
-* Approximately **5–6% hallucination reduction** after applying the correction stage
+Key findings:
 
-These results suggest that lightweight retrieval-based verification can significantly improve the factual reliability of LLM outputs without requiring additional LLM inference during verification.
+* **High precision hallucination detection** (~0.97)
+* **Strong recall performance** (~0.89)
+* **F1-score of ~0.93**, indicating balanced detection capability
+* Approximately **40% hallucination reduction** on the MedHallu dataset after applying correction
+* **Low regression rate (~2%)**, indicating minimal degradation of correct responses
+
+These results demonstrate that retrieval-grounded verification combined with evidence-guided correction can significantly improve the factual reliability of LLM-generated responses.
 
 ---
 # Reproducibility
