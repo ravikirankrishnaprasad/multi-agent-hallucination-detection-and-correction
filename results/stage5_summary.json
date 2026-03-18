@@ -9,12 +9,13 @@
     "detection_recall": 0.0,
     "detection_f1": 0.0,
     "baseline_hallu_rate": 1.0,
-    "after_hallu_rate": 0.9306666666666666,
-    "positive_after_hallu_rate": 0.9306666666666666,
-    "positive_hallu_reduction": 0.06933333333333336,
+    "after_hallu_rate": 0.8898888888888888,
+    "positive_after_hallu_rate": 0.8898888888888888,
+    "positive_hallu_reduction": 0.11011111111111112,
     "regression_rate": null,
     "corrected_cases": 0,
     "corrected_positive_cases": 0,
+    "fixed_positive_cases": 0,
     "correction_accuracy": null
   },
   {
@@ -33,6 +34,7 @@
     "regression_rate": 0.0,
     "corrected_cases": 0,
     "corrected_positive_cases": 0,
+    "fixed_positive_cases": 0,
     "correction_accuracy": null
   },
   {
@@ -45,13 +47,14 @@
     "detection_recall": 0.0,
     "detection_f1": 0.0,
     "baseline_hallu_rate": 1.0,
-    "after_hallu_rate": 0.9942222222222222,
-    "positive_after_hallu_rate": 0.9942222222222222,
-    "positive_hallu_reduction": 0.005777777777777771,
+    "after_hallu_rate": 0.5264444444444445,
+    "positive_after_hallu_rate": 0.5264444444444445,
+    "positive_hallu_reduction": 0.47355555555555556,
     "regression_rate": null,
     "corrected_cases": 9000,
     "corrected_positive_cases": 9000,
-    "correction_accuracy": 0.0057777777777777775
+    "fixed_positive_cases": 4262,
+    "correction_accuracy": 0.47355555555555556
   },
   {
     "dataset": "truthfulqa",
@@ -63,12 +66,13 @@
     "detection_recall": 0.0,
     "detection_f1": 0.0,
     "baseline_hallu_rate": 0.0,
-    "after_hallu_rate": 0.19706242350061198,
+    "after_hallu_rate": 1.0,
     "positive_after_hallu_rate": null,
     "positive_hallu_reduction": null,
-    "regression_rate": 0.19706242350061198,
+    "regression_rate": 1.0,
     "corrected_cases": 817,
     "corrected_positive_cases": 0,
+    "fixed_positive_cases": 0,
     "correction_accuracy": null
   },
   {
@@ -78,15 +82,16 @@
     "positive_cases": 9000,
     "negative_cases": 0,
     "detection_precision": 1.0,
-    "detection_recall": 0.3227777777777778,
-    "detection_f1": 0.48803023939521206,
+    "detection_recall": 0.891,
+    "detection_f1": 0.9423585404547858,
     "baseline_hallu_rate": 1.0,
-    "after_hallu_rate": 0.9306666666666666,
-    "positive_after_hallu_rate": 0.9306666666666666,
-    "positive_hallu_reduction": 0.06933333333333336,
+    "after_hallu_rate": 0.8898888888888888,
+    "positive_after_hallu_rate": 0.8898888888888888,
+    "positive_hallu_reduction": 0.11011111111111112,
     "regression_rate": null,
     "corrected_cases": 0,
     "corrected_positive_cases": 0,
+    "fixed_positive_cases": 0,
     "correction_accuracy": null
   },
   {
@@ -105,6 +110,7 @@
     "regression_rate": 0.0,
     "corrected_cases": 0,
     "corrected_positive_cases": 0,
+    "fixed_positive_cases": 0,
     "correction_accuracy": null
   },
   {
@@ -114,16 +120,17 @@
     "positive_cases": 9000,
     "negative_cases": 0,
     "detection_precision": 1.0,
-    "detection_recall": 0.3227777777777778,
-    "detection_f1": 0.48803023939521206,
+    "detection_recall": 0.891,
+    "detection_f1": 0.9423585404547858,
     "baseline_hallu_rate": 1.0,
-    "after_hallu_rate": 0.9444444444444444,
-    "positive_after_hallu_rate": 0.9444444444444444,
-    "positive_hallu_reduction": 0.05555555555555558,
+    "after_hallu_rate": 0.5784444444444444,
+    "positive_after_hallu_rate": 0.5784444444444444,
+    "positive_hallu_reduction": 0.42155555555555557,
     "regression_rate": null,
-    "corrected_cases": 2905,
-    "corrected_positive_cases": 2905,
-    "correction_accuracy": 0.0010327022375215145
+    "corrected_cases": 8019,
+    "corrected_positive_cases": 8019,
+    "fixed_positive_cases": 3612,
+    "correction_accuracy": 0.450430228208006
   },
   {
     "dataset": "truthfulqa",
@@ -135,12 +142,13 @@
     "detection_recall": 0.0,
     "detection_f1": 0.0,
     "baseline_hallu_rate": 0.0,
-    "after_hallu_rate": 0.13953488372093023,
+    "after_hallu_rate": 0.2484700122399021,
     "positive_after_hallu_rate": null,
     "positive_hallu_reduction": null,
-    "regression_rate": 0.13953488372093023,
-    "corrected_cases": 165,
+    "regression_rate": 0.2484700122399021,
+    "corrected_cases": 203,
     "corrected_positive_cases": 0,
+    "fixed_positive_cases": 0,
     "correction_accuracy": null
   }
 ]

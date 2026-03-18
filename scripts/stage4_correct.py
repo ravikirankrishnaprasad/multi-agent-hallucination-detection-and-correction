@@ -1,402 +1,405 @@
 #!/usr/bin/env python3
 """
-Stage-4: Correction Agent (Refinement)
+Stage-4: Correction Agent (Mitigation) for unified binary hallucination detection.
 
-Inputs:
+Inputs
+------
+- data/processed/hallu_detection_dataset.csv
 - results/stage3_verification.jsonl
 
-Outputs:
+Outputs
+-------
 - results/stage4_corrections.jsonl
 - results/stage4_metrics.json
 
-Improved correction:
-- uses full evidence text from Stage-3 when available
-- prefers best evidence by combined_score
-- MedHallu: selects best sentence using question + ground-truth similarity
-- TruthfulQA: prefers authoritative truthfulqa_correct_answer evidence
+Logic
+-----
+- If Stage-3 predicts hallucinated:
+    replace the answer with the top retrieved evidence snippet
+- Else:
+    keep the original answer unchanged
 
-Evaluation:
-- MedHallu:
-    corrected answer considered correct if similarity(corrected, ground_truth) >= threshold
-- TruthfulQA:
-    corrected answer considered correct if exact-normalized match or similarity to any correct answer
+Evaluation
+----------
+Label convention:
+- 1 -> hallucinated
+- 0 -> not hallucinated
+
+For each sample, we derive:
+- before_hallucinated  = original label
+- after_hallucinated   = whether the corrected/final answer is still hallucinated
+
+Rules used for evaluation:
+- For MedHallu (label=1):
+    corrected answer is considered fixed if it matches/supports the authoritative
+    ground truth sufficiently
+- For TruthfulQA (label=0):
+    unchanged answers should remain non-hallucinated;
+    if correction was applied to a factual answer, that is counted as regression
 """
 
 from __future__ import annotations
 
 import argparse
-import ast
 import json
-import re
-from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
+import pandas as pd
 
-# -----------------------------
-# Paths
-# -----------------------------
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RESULTS_DIR = PROJECT_ROOT / "results"
 
 
-# -----------------------------
-# Utilities
-# -----------------------------
-def _norm(s: Any) -> str:
-    if s is None:
+def normalize_text(value: Any) -> str:
+    if value is None:
         return ""
-    s = str(s).strip().lower()
-    s = s.replace("\r", " ").replace("\n", " ")
+    s = str(value).replace("\r", " ").replace("\n", " ")
     s = " ".join(s.split())
-    return s.strip(" \t\n\r\"'`.,;:!?()[]{}")
+    return s.strip().lower()
 
 
-def similarity(a: Any, b: Any) -> float:
-    a_n = _norm(a)
-    b_n = _norm(b)
-    if not a_n or not b_n:
+def ensure_exists(path: Path, what: str) -> None:
+    if not path.exists():
+        raise FileNotFoundError(f"{what} not found: {path}")
+
+
+def token_set(text: str) -> set[str]:
+    cleaned = normalize_text(text)
+    if not cleaned:
+        return set()
+    return {tok for tok in cleaned.split() if tok}
+
+
+def jaccard_similarity(a: str, b: str) -> float:
+    ta = token_set(a)
+    tb = token_set(b)
+    if not ta or not tb:
         return 0.0
-    return SequenceMatcher(None, a_n, b_n).ratio()
+    return len(ta & tb) / len(ta | tb)
 
 
-def sent_split(text: str) -> List[str]:
-    if not text:
-        return []
-    t = text.replace("\r", "\n")
-    parts = re.split(r"(?<=[\.\?\!])\s+|\n+", t)
-    return [p.strip() for p in parts if p and p.strip()]
-
-
-def _safe_load_list(x: Any) -> List[str]:
-    if x is None:
-        return []
-    if isinstance(x, list):
-        return [str(i) for i in x]
-    s = str(x).strip()
-    if not s:
-        return []
-    try:
-        v = json.loads(s)
-        if isinstance(v, list):
-            return [str(i) for i in v]
-    except Exception:
-        pass
-    try:
-        v = ast.literal_eval(s)
-        if isinstance(v, list):
-            return [str(i) for i in v]
-    except Exception:
-        pass
-    return []
-
-
-# -----------------------------
-# Evidence ranking / correction
-# -----------------------------
-def rank_evidence_items(evidence_items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def overlap_ratio(candidate: str, reference: str) -> float:
     """
-    Sort evidence by:
-    1. combined_score (preferred)
-    2. answer_support
-    3. retrieval score
+    Fraction of reference tokens covered by candidate.
     """
-    return sorted(
-        evidence_items,
-        key=lambda e: (
-            float(e.get("combined_score", 0.0)),
-            float(e.get("answer_support", 0.0)),
-            float(e.get("score", 0.0)),
-        ),
-        reverse=True,
+    tc = token_set(candidate)
+    tr = token_set(reference)
+    if not tc or not tr:
+        return 0.0
+    return len(tc & tr) / len(tr)
+
+
+def choose_replacement_from_evidence(verification: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
+    evidence = verification.get("evidence", [])
+    if not evidence:
+        return "", {}
+
+    best = max(
+        evidence,
+        key=lambda e: float(e.get("combined_score", 0.0)),
     )
 
-
-def select_best_sentence_medhallu(question: str, ground_truth: str, evidence_text: str) -> str:
-    """
-    Choose the best sentence from MedHallu evidence using:
-    0.45 * similarity(question, sentence)
-    0.55 * similarity(ground_truth, sentence)
-
-    Slightly higher weight to ground truth because Stage-4 is evaluated
-    against GT and we want better refinement quality for dissertation results.
-    """
-    sents = sent_split(evidence_text)
-    if not sents:
-        return evidence_text.strip()
-
-    scored = []
-    for s in sents:
-        q_sim = similarity(question, s)
-        gt_sim = similarity(ground_truth, s)
-        score = 0.45 * q_sim + 0.55 * gt_sim
-        scored.append((score, s))
-
-    scored.sort(key=lambda x: x[0], reverse=True)
-    return scored[0][1].strip()
+    replacement = str(best.get("full_text") or best.get("snippet") or "").strip()
+    return replacement, best
 
 
-def corrected_answer_from_evidence(
-    dataset: str,
-    question: str,
+def medhallu_after_hallucination(
+    corrected_answer: str,
     ground_truth: str,
-    evidence_items: List[Dict[str, Any]],
-) -> str:
+    best_evidence: str,
+    match_threshold: float,
+) -> Tuple[bool, Dict[str, float]]:
     """
-    Correction strategy:
-    - TruthfulQA: prefer top authoritative correct-answer evidence
-    - MedHallu: choose best sentence from best evidence full text
-    - fallback: use best evidence text/snippet
+    Return True if still hallucinated after correction, else False.
+
+    IMPORTANT:
+    Success is judged only against ground truth to avoid evaluation leakage.
+    We still log evidence_jaccard for analysis, but do not use it to mark a fix.
     """
-    if not evidence_items:
-        return ""
+    sim_gt = jaccard_similarity(corrected_answer, ground_truth)
+    cov_gt = overlap_ratio(corrected_answer, ground_truth)
+    sim_ev = jaccard_similarity(corrected_answer, best_evidence)
 
-    ranked = rank_evidence_items(evidence_items)
+    fixed = max(sim_gt, cov_gt) >= match_threshold
+    still_hallucinated = not fixed
 
-    if dataset == "truthfulqa":
-        for e in ranked:
-            if e.get("source") == "truthfulqa_correct_answer":
-                txt = str(e.get("full_text") or e.get("snippet") or "").strip()
-                if txt:
-                    return txt
-
-    best = ranked[0]
-    full_text = str(best.get("full_text") or "").strip()
-    snippet = str(best.get("snippet") or "").strip()
-    text = full_text if full_text else snippet
-
-    if not text:
-        return ""
-
-    if dataset == "medhallu":
-        return select_best_sentence_medhallu(question, ground_truth, text)
-
-    return text
+    return still_hallucinated, {
+        "ground_truth_jaccard": float(sim_gt),
+        "ground_truth_overlap": float(cov_gt),
+        "evidence_jaccard": float(sim_ev),
+    }
 
 
-# -----------------------------
-# Correctness checks
-# -----------------------------
-def is_correct_medhallu(corrected: str, ground_truth: str, sim_threshold: float) -> bool:
-    return similarity(corrected, ground_truth) >= sim_threshold
+def truthfulqa_after_hallucination(corrected_applied: bool) -> bool:
+    """
+    TruthfulQA samples are factual (label=0) in the merged setup.
+    If we changed a factual answer, treat it as regression / after_hallucinated=True.
+    """
+    return bool(corrected_applied)
 
 
-def is_correct_truthfulqa(corrected: str, correct_answers: List[str], sim_threshold: float) -> bool:
-    c_n = _norm(corrected)
-    if not c_n:
-        return False
-
-    norm_set = {_norm(x) for x in correct_answers if _norm(x)}
-    if c_n in norm_set:
-        return True
-
-    for ans in correct_answers:
-        if similarity(corrected, ans) >= sim_threshold:
-            return True
-
-    return False
+def load_stage3_logs(path: Path) -> Dict[str, Dict[str, Any]]:
+    logs: Dict[str, Dict[str, Any]] = {}
+    with path.open("r", encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                record = json.loads(line)
+                sample_id = str(record.get("sample_id", "")).strip()
+                if sample_id:
+                    logs[sample_id] = record
+    return logs
 
 
-# -----------------------------
-# Main
-# -----------------------------
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--in_jsonl", default="results/stage3_verification.jsonl")
-    ap.add_argument("--out_jsonl", default="results/stage4_corrections.jsonl")
-    ap.add_argument("--out_metrics", default="results/stage4_metrics.json")
-    ap.add_argument("--sim_threshold_medhallu", type=float, default=0.60)
-    ap.add_argument("--sim_threshold_truthfulqa", type=float, default=0.70)
-    ap.add_argument("--correct_on", choices=["pred", "label"], default="pred")
-    args = ap.parse_args()
+def compute_stage4_metrics(records: List[Dict[str, Any]]) -> Dict[str, Any]:
+    total = len(records)
 
-    in_path = PROJECT_ROOT / args.in_jsonl
-    out_path = PROJECT_ROOT / args.out_jsonl
-    metrics_path = PROJECT_ROOT / args.out_metrics
+    baseline_hallu_count = sum(1 for r in records if r["before_hallucinated"])
+    after_hallu_count = sum(1 for r in records if r["after_hallucinated"])
 
-    if not in_path.exists():
-        raise FileNotFoundError(
-            f"Stage-3 JSONL not found: {in_path}\n"
-            "Run Stage-3 first: python scripts/stage3_verify.py"
+    corrected_cases = sum(1 for r in records if r["correction_applied"])
+    corrected_positive_cases = sum(
+        1 for r in records
+        if r["correction_applied"] and r["label"] == 1
+    )
+
+    fixed_positive_cases = sum(
+        1 for r in records
+        if r["correction_applied"] and r["label"] == 1 and not r["after_hallucinated"]
+    )
+
+    regression_cases = sum(
+        1 for r in records
+        if r["label"] == 0 and r["after_hallucinated"]
+    )
+
+    correction_accuracy = (
+        fixed_positive_cases / corrected_positive_cases
+        if corrected_positive_cases else 0.0
+    )
+
+    baseline_hallu_rate = baseline_hallu_count / total if total else 0.0
+    after_hallu_rate = after_hallu_count / total if total else 0.0
+    rate_reduction = (
+        (baseline_hallu_rate - after_hallu_rate) / baseline_hallu_rate
+        if baseline_hallu_rate > 0 else 0.0
+    )
+
+    regression_rate = regression_cases / total if total else 0.0
+    positive_hallu_reduction = (
+        fixed_positive_cases / baseline_hallu_count
+        if baseline_hallu_count > 0 else 0.0
+    )
+
+    per_dataset: Dict[str, Dict[str, Any]] = {}
+    df = pd.DataFrame(records)
+
+    for dataset_name, subset in df.groupby("dataset"):
+        subset_records = subset.to_dict(orient="records")
+        n = len(subset_records)
+
+        subset_baseline = sum(1 for r in subset_records if r["before_hallucinated"])
+        subset_after = sum(1 for r in subset_records if r["after_hallucinated"])
+        subset_corrected = sum(1 for r in subset_records if r["correction_applied"])
+        subset_corrected_positive = sum(
+            1 for r in subset_records if r["correction_applied"] and r["label"] == 1
+        )
+        subset_fixed_positive = sum(
+            1 for r in subset_records
+            if r["correction_applied"] and r["label"] == 1 and not r["after_hallucinated"]
+        )
+        subset_regression = sum(
+            1 for r in subset_records if r["label"] == 0 and r["after_hallucinated"]
         )
 
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+        subset_correction_accuracy = (
+            float(subset_fixed_positive / subset_corrected_positive)
+            if subset_corrected_positive else 0.0
+        )
 
-    total = 0
-    baseline_hallu_count = 0
-    after_hallu_count = 0
-    corrected_cases = 0
-    corrected_correct = 0
+        subset_baseline_rate = float(subset_baseline / n) if n else 0.0
+        subset_after_rate = float(subset_after / n) if n else 0.0
+        subset_rate_reduction = (
+            float((subset_baseline_rate - subset_after_rate) / subset_baseline_rate)
+            if subset_baseline_rate > 0 else 0.0
+        )
+        subset_positive_reduction = (
+            float(subset_fixed_positive / subset_baseline)
+            if subset_baseline > 0 else 0.0
+        )
+        subset_regression_rate = float(subset_regression / n) if n else 0.0
 
-    by_ds = {
-        "medhallu": {"total": 0, "baseline_hallu": 0, "after_hallu": 0, "corrected_cases": 0, "corrected_correct": 0},
-        "truthfulqa": {"total": 0, "baseline_hallu": 0, "after_hallu": 0, "corrected_cases": 0, "corrected_correct": 0},
-    }
-
-    with in_path.open("r", encoding="utf-8") as fin, out_path.open("w", encoding="utf-8") as fout:
-        for line in fin:
-            if not line.strip():
-                continue
-            rec = json.loads(line)
-            total += 1
-
-            dataset = rec.get("dataset")
-            if dataset not in by_ds:
-                dataset = str(dataset)
-
-            label_hallu = bool(rec.get("label_hallucinated", True))
-            baseline_hallu_count += int(label_hallu)
-
-            if dataset in by_ds:
-                by_ds[dataset]["total"] += 1
-                by_ds[dataset]["baseline_hallu"] += int(label_hallu)
-
-            q = str(rec.get("question", ""))
-            candidate = str(rec.get("candidate_answer", ""))
-            gt = str(rec.get("ground_truth", ""))
-            evidence = rec.get("verification", {}).get("evidence", []) or []
-            pred_hallu = bool(rec.get("verification", {}).get("hallucinated", False))
-
-            do_correct = pred_hallu if args.correct_on == "pred" else label_hallu
-
-            corrected = ""
-            if do_correct:
-                corrected = corrected_answer_from_evidence(
-                    dataset=dataset,
-                    question=q,
-                    ground_truth=gt,
-                    evidence_items=evidence,
-                )
-                corrected_cases += 1
-                if dataset in by_ds:
-                    by_ds[dataset]["corrected_cases"] += 1
-
-            final_answer = corrected if corrected else candidate
-
-            final_is_correct = False
-            if dataset == "medhallu":
-                final_is_correct = is_correct_medhallu(
-                    final_answer,
-                    gt,
-                    args.sim_threshold_medhallu,
-                )
-
-                if do_correct:
-                    is_corr = is_correct_medhallu(
-                        corrected,
-                        gt,
-                        args.sim_threshold_medhallu,
-                    )
-                    corrected_correct += int(is_corr)
-                    by_ds["medhallu"]["corrected_correct"] += int(is_corr)
-
-            elif dataset == "truthfulqa":
-                correct_answers = rec.get("correct_answers", [])
-                if not isinstance(correct_answers, list):
-                    correct_answers = _safe_load_list(correct_answers)
-
-                final_is_correct = is_correct_truthfulqa(
-                    final_answer,
-                    correct_answers,
-                    args.sim_threshold_truthfulqa,
-                )
-
-                if do_correct:
-                    is_corr = is_correct_truthfulqa(
-                        corrected,
-                        correct_answers,
-                        args.sim_threshold_truthfulqa,
-                    )
-                    corrected_correct += int(is_corr)
-                    by_ds["truthfulqa"]["corrected_correct"] += int(is_corr)
-
-            else:
-                final_is_correct = False
-
-            final_hallu = not final_is_correct
-            after_hallu_count += int(final_hallu)
-            if dataset in by_ds:
-                by_ds[dataset]["after_hallu"] += int(final_hallu)
-
-            rec_out = dict(rec)
-            rec_out["stage4"] = {
-                "correct_on": args.correct_on,
-                "was_corrected": bool(do_correct),
-                "corrected_answer": corrected,
-                "final_answer": final_answer,
-                "final_is_correct": bool(final_is_correct),
-                "final_hallucinated": bool(final_hallu),
-                "sim_threshold_medhallu": args.sim_threshold_medhallu,
-                "sim_threshold_truthfulqa": args.sim_threshold_truthfulqa,
-            }
-            fout.write(json.dumps(rec_out, ensure_ascii=False) + "\n")
-
-    baseline_rate = (baseline_hallu_count / total) if total else 0.0
-    after_rate = (after_hallu_count / total) if total else 0.0
-    rate_reduction = ((baseline_rate - after_rate) / baseline_rate) if baseline_rate > 0 else 0.0
-    correction_accuracy = (corrected_correct / corrected_cases) if corrected_cases else 0.0
-
-    per_dataset = {}
-    for ds, s in by_ds.items():
-        if s["total"] == 0:
-            continue
-        b_rate = s["baseline_hallu"] / s["total"]
-        a_rate = s["after_hallu"] / s["total"]
-        rr = ((b_rate - a_rate) / b_rate) if b_rate > 0 else 0.0
-        ca = (s["corrected_correct"] / s["corrected_cases"]) if s["corrected_cases"] else 0.0
-        per_dataset[ds] = {
-            "total": s["total"],
-            "baseline_hallucination_rate": b_rate,
-            "after_correction_hallucination_rate": a_rate,
-            "hallucination_rate_reduction": rr,
-            "corrected_cases": s["corrected_cases"],
-            "correction_accuracy": ca,
+        per_dataset[str(dataset_name)] = {
+            "n": int(n),
+            "corrected_cases": int(subset_corrected),
+            "corrected_positive_cases": int(subset_corrected_positive),
+            "fixed_positive_cases": int(subset_fixed_positive),
+            "regression_cases": int(subset_regression),
+            "correction_accuracy": subset_correction_accuracy,
+            "baseline_hallu_rate": subset_baseline_rate,
+            "after_hallu_rate": subset_after_rate,
+            "rate_reduction": subset_rate_reduction,
+            "positive_hallu_reduction": subset_positive_reduction,
+            "regression_rate": subset_regression_rate,
         }
 
-    metrics = {
-        "stage": "stage4_correction",
-        "input_jsonl": str(in_path),
-        "output_jsonl": str(out_path),
-        "correct_on": args.correct_on,
-        "similarity_thresholds": {
-            "medhallu": args.sim_threshold_medhallu,
-            "truthfulqa": args.sim_threshold_truthfulqa,
-        },
+    return {
         "overall": {
-            "total_samples": total,
-            "baseline_hallucination_rate": baseline_rate,
-            "after_correction_hallucination_rate": after_rate,
-            "hallucination_rate_reduction": rate_reduction,
-            "corrected_cases": corrected_cases,
-            "correction_accuracy": correction_accuracy,
+            "n": int(total),
+            "corrected_cases": int(corrected_cases),
+            "corrected_positive_cases": int(corrected_positive_cases),
+            "fixed_positive_cases": int(fixed_positive_cases),
+            "regression_cases": int(regression_cases),
+            "correction_accuracy": float(correction_accuracy),
+            "baseline_hallu_rate": float(baseline_hallu_rate),
+            "after_hallu_rate": float(after_hallu_rate),
+            "rate_reduction": float(rate_reduction),
+            "positive_hallu_reduction": float(positive_hallu_reduction),
+            "regression_rate": float(regression_rate),
         },
         "per_dataset": per_dataset,
-        "notes": {
-            "correction_method": "Evidence-based extractive correction using full evidence text where available.",
-            "truthfulqa_correctness": "Correct if corrected answer matches any correct answer (exact normalized or similarity).",
-            "medhallu_correctness": "Correct if similarity(corrected, GT) >= threshold.",
-        },
     }
 
-    metrics_path.write_text(json.dumps(metrics, indent=2, ensure_ascii=False), encoding="utf-8")
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input_dataset", default="data/processed/hallu_detection_dataset.csv")
+    parser.add_argument("--input_stage3", default="results/stage3_verification.jsonl")
+    parser.add_argument("--out_jsonl", default="results/stage4_corrections.jsonl")
+    parser.add_argument("--out_metrics", default="results/stage4_metrics.json")
+    parser.add_argument(
+        "--match_threshold",
+        type=float,
+        default=0.50,
+        help="Threshold for considering a corrected MedHallu answer sufficiently aligned with ground truth",
+    )
+    args = parser.parse_args()
+
+    input_dataset = PROJECT_ROOT / args.input_dataset
+    input_stage3 = PROJECT_ROOT / args.input_stage3
+    out_jsonl = PROJECT_ROOT / args.out_jsonl
+    out_metrics = PROJECT_ROOT / args.out_metrics
+
+    ensure_exists(input_dataset, "Unified dataset")
+    ensure_exists(input_stage3, "Stage-3 verification output")
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    df = pd.read_csv(input_dataset)
+    stage3_logs = load_stage3_logs(input_stage3)
+
+    output_records: List[Dict[str, Any]] = []
+
+    for _, row in df.iterrows():
+        sample_id = str(row.get("sample_id", "")).strip()
+        dataset = str(row.get("dataset", "")).strip()
+        label = int(row.get("label", 0))
+
+        original_answer = str(row.get("answer", "")).strip()
+        ground_truth = str(row.get("ground_truth", "")).strip()
+
+        stage3 = stage3_logs.get(sample_id)
+        if stage3 is None:
+            raise ValueError(f"Missing Stage-3 record for sample_id={sample_id}")
+
+        verification = stage3.get("verification", {})
+        predicted_hallucinated = bool(stage3.get("predicted_hallucinated", False))
+
+        corrected_answer = original_answer
+        correction_applied = False
+        best_evidence_text = ""
+        best_evidence_meta: Dict[str, Any] = {}
+        mitigation_scores: Dict[str, float] = {}
+
+        if predicted_hallucinated:
+            replacement, best_evidence = choose_replacement_from_evidence(verification)
+            if replacement:
+                corrected_answer = replacement
+                correction_applied = True
+                best_evidence_text = replacement
+                best_evidence_meta = best_evidence.get("meta", {})
+
+        before_hallucinated = bool(label == 1)
+
+        if dataset == "medhallu":
+            after_hallucinated, mitigation_scores = medhallu_after_hallucination(
+                corrected_answer=corrected_answer,
+                ground_truth=ground_truth,
+                best_evidence=best_evidence_text,
+                match_threshold=float(args.match_threshold),
+            )
+        elif dataset == "truthfulqa":
+            after_hallucinated = truthfulqa_after_hallucination(correction_applied)
+            mitigation_scores = {}
+        else:
+            after_hallucinated = before_hallucinated
+
+        output_records.append(
+            {
+                "sample_id": sample_id,
+                "dataset": dataset,
+                "question": str(row.get("question", "")),
+                "original_answer": original_answer,
+                "corrected_answer": corrected_answer,
+                "ground_truth": ground_truth,
+                "label": label,
+                "before_hallucinated": bool(before_hallucinated),
+                "predicted_hallucinated_stage3": bool(predicted_hallucinated),
+                "correction_applied": bool(correction_applied),
+                "after_hallucinated": bool(after_hallucinated),
+                "difficulty": str(row.get("difficulty", "")),
+                "category": str(row.get("category", "")),
+                "answer_type": str(row.get("answer_type", "")),
+                "best_evidence_meta": best_evidence_meta,
+                "mitigation_scores": mitigation_scores,
+            }
+        )
+
+    metrics = compute_stage4_metrics(output_records)
+    payload = {
+        "stage": "stage4_correction",
+        "match_threshold": float(args.match_threshold),
+        "notes": {
+            "correction_policy": "If Stage-3 predicts hallucinated, replace answer with top retrieved evidence snippet.",
+            "medhallu_evaluation": "A corrected MedHallu answer is considered fixed only if sufficiently aligned with ground truth.",
+            "truthfulqa_evaluation": "Changing a factual TruthfulQA answer is counted as regression.",
+        },
+        **metrics,
+    }
+
+    with out_jsonl.open("w", encoding="utf-8") as f:
+        for record in output_records:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+    out_metrics.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    overall = payload["overall"]
 
     print("\n[Stage-4] Outputs written:")
-    print(f"  - {out_path}")
-    print(f"  - {metrics_path}\n")
-    print("[Stage-4] Overall:")
-    print(f"  corrected_cases      = {corrected_cases}")
-    print(f"  correction_accuracy  = {corrected_correct / corrected_cases if corrected_cases else 0.0:.4f}")
-    print(f"  baseline_hallu_rate  = {baseline_rate:.4f}")
-    print(f"  after_hallu_rate     = {after_rate:.4f}")
-    print(f"  rate_reduction       = {rate_reduction:.4f}")
+    print(f"  - {out_jsonl}")
+    print(f"  - {out_metrics}")
+
+    print("\n[Stage-4] Overall:")
+    print(f"  corrected_cases           = {overall['corrected_cases']}")
+    print(f"  corrected_positive_cases  = {overall['corrected_positive_cases']}")
+    print(f"  fixed_positive_cases      = {overall['fixed_positive_cases']}")
+    print(f"  correction_accuracy       = {overall['correction_accuracy']:.4f}")
+    print(f"  baseline_hallu_rate       = {overall['baseline_hallu_rate']:.4f}")
+    print(f"  after_hallu_rate          = {overall['after_hallu_rate']:.4f}")
+    print(f"  rate_reduction            = {overall['rate_reduction']:.4f}")
+    print(f"  positive_hallu_reduction  = {overall['positive_hallu_reduction']:.4f}")
+    print(f"  regression_rate           = {overall['regression_rate']:.4f}")
 
     print("\n[Stage-4] Per dataset:")
-    for ds, m in per_dataset.items():
+    for dataset_name, stats in payload["per_dataset"].items():
         print(
-            f"  {ds}: corr_acc={m['correction_accuracy']:.4f}, "
-            f"baseline_rate={m['baseline_hallucination_rate']:.4f}, "
-            f"after_rate={m['after_correction_hallucination_rate']:.4f}, "
-            f"reduction={m['hallucination_rate_reduction']:.4f}"
+            f"  {dataset_name}: "
+            f"corr_acc={stats['correction_accuracy']:.4f}, "
+            f"baseline_rate={stats['baseline_hallu_rate']:.4f}, "
+            f"after_rate={stats['after_hallu_rate']:.4f}, "
+            f"reduction={stats['rate_reduction']:.4f}, "
+            f"positive_reduction={stats['positive_hallu_reduction']:.4f}, "
+            f"regression={stats['regression_rate']:.4f}"
         )
 
 

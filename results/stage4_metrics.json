@@ -1,41 +1,50 @@
 {
   "stage": "stage4_correction",
-  "input_jsonl": "/Users/vkrkscb/Desktop/LJMU/github/multi-agent-hallucination-detection-and-correction/results/stage3_verification.jsonl",
-  "output_jsonl": "/Users/vkrkscb/Desktop/LJMU/github/multi-agent-hallucination-detection-and-correction/results/stage4_corrections.jsonl",
-  "correct_on": "pred",
-  "similarity_thresholds": {
-    "medhallu": 0.6,
-    "truthfulqa": 0.7
+  "match_threshold": 0.5,
+  "notes": {
+    "correction_policy": "If Stage-3 predicts hallucinated, replace answer with top retrieved evidence snippet.",
+    "medhallu_evaluation": "A corrected MedHallu answer is considered fixed only if sufficiently aligned with ground truth.",
+    "truthfulqa_evaluation": "Changing a factual TruthfulQA answer is counted as regression."
   },
   "overall": {
-    "total_samples": 9817,
-    "baseline_hallucination_rate": 0.9167770194560456,
-    "after_correction_hallucination_rate": 0.8774574717327086,
-    "hallucination_rate_reduction": 0.04288888888888883,
-    "corrected_cases": 3070,
-    "correction_accuracy": 0.01758957654723127
+    "n": 9817,
+    "corrected_cases": 8222,
+    "corrected_positive_cases": 8019,
+    "fixed_positive_cases": 3612,
+    "regression_cases": 203,
+    "correction_accuracy": 0.450430228208006,
+    "baseline_hallu_rate": 0.9167770194560456,
+    "after_hallu_rate": 0.5509829886930834,
+    "rate_reduction": 0.399,
+    "positive_hallu_reduction": 0.4013333333333333,
+    "regression_rate": 0.020678414994397473
   },
   "per_dataset": {
     "medhallu": {
-      "total": 9000,
-      "baseline_hallucination_rate": 1.0,
-      "after_correction_hallucination_rate": 0.9444444444444444,
-      "hallucination_rate_reduction": 0.05555555555555558,
-      "corrected_cases": 2905,
-      "correction_accuracy": 0.0010327022375215145
+      "n": 9000,
+      "corrected_cases": 8019,
+      "corrected_positive_cases": 8019,
+      "fixed_positive_cases": 3612,
+      "regression_cases": 0,
+      "correction_accuracy": 0.450430228208006,
+      "baseline_hallu_rate": 1.0,
+      "after_hallu_rate": 0.5784444444444444,
+      "rate_reduction": 0.42155555555555557,
+      "positive_hallu_reduction": 0.4013333333333333,
+      "regression_rate": 0.0
     },
     "truthfulqa": {
-      "total": 817,
-      "baseline_hallucination_rate": 0.0,
-      "after_correction_hallucination_rate": 0.13953488372093023,
-      "hallucination_rate_reduction": 0.0,
-      "corrected_cases": 165,
-      "correction_accuracy": 0.3090909090909091
+      "n": 817,
+      "corrected_cases": 203,
+      "corrected_positive_cases": 0,
+      "fixed_positive_cases": 0,
+      "regression_cases": 203,
+      "correction_accuracy": 0.0,
+      "baseline_hallu_rate": 0.0,
+      "after_hallu_rate": 0.2484700122399021,
+      "rate_reduction": 0.0,
+      "positive_hallu_reduction": 0.0,
+      "regression_rate": 0.2484700122399021
     }
-  },
-  "notes": {
-    "correction_method": "Evidence-based extractive correction using full evidence text where available.",
-    "truthfulqa_correctness": "Correct if corrected answer matches any correct answer (exact normalized or similarity).",
-    "medhallu_correctness": "Correct if similarity(corrected, GT) >= threshold."
   }
 }
