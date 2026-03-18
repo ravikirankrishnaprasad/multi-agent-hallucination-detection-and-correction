@@ -12,8 +12,12 @@ Inputs
 
 Outputs
 -------
+Single-threshold mode:
 - results/stage3_verification.jsonl
 - results/stage3_metrics.json
+
+Threshold-sweep mode:
+- results/stage3_sweep_metrics.json (or custom path)
 
 Detection logic
 ---------------
@@ -152,7 +156,7 @@ class TfidfRetriever:
             results.append(
                 {
                     "corpus_idx": int(idx),
-                    "score": float(scores[idx]),  # question -> evidence similarity
+                    "score": float(scores[idx]),
                     "text": self.corpus[idx],
                     "meta": self.meta[idx],
                 }
@@ -249,7 +253,7 @@ class VerificationAgent:
                     "doc_type": e["meta"].get("doc_type", ""),
                     "meta": e["meta"],
                     "snippet": normalize_text(e["text"])[:450],
-                    "full_text": e["text"],  # used by Stage-4
+                    "full_text": e["text"],
                 }
                 for e in enriched_evidence
             ],
@@ -309,7 +313,6 @@ def run_verification(
         subset_true = [to_bool_label(x) for x in subset["label"].tolist()]
         subset_pred = []
 
-        # reuse already-generated logs instead of recomputing
         log_lookup = {
             record["sample_id"]: record["predicted_hallucinated"]
             for record in logs
@@ -373,6 +376,14 @@ def maybe_limit_by_dataset(df: pd.DataFrame, limit_medhallu: int, limit_truthful
     return out
 
 
+def resolve_output_path(path_str: str) -> Path:
+    path = Path(path_str)
+    if not path.is_absolute():
+        path = PROJECT_ROOT / path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
+
+
 # --------------------------------------------------
 # Main
 # --------------------------------------------------
@@ -386,6 +397,11 @@ def main() -> None:
     parser.add_argument("--threshold_sweep", type=str, default="", help="Optional comma-separated thresholds, e.g. 0.10,0.15,0.20,0.25,0.30")
     parser.add_argument("--out_jsonl", default="results/stage3_verification.jsonl")
     parser.add_argument("--out_metrics", default="results/stage3_metrics.json")
+    parser.add_argument(
+        "--save_sweep_path",
+        default="results/stage3_sweep_metrics.json",
+        help="Where to save threshold sweep results JSON. Used only when --threshold_sweep is provided.",
+    )
     args = parser.parse_args()
 
     ensure_exists(PROCESSED_DIR / "hallu_detection_dataset.csv", "hallu_detection_dataset.csv")
@@ -423,6 +439,10 @@ def main() -> None:
                 "combined_accuracy": metrics["combined_metrics"]["accuracy"],
                 "combined_specificity": metrics["combined_metrics"]["specificity"],
                 "combined_balanced_accuracy": metrics["combined_metrics"]["balanced_accuracy"],
+                "combined_tp": metrics["combined_metrics"]["tp"],
+                "combined_fp": metrics["combined_metrics"]["fp"],
+                "combined_fn": metrics["combined_metrics"]["fn"],
+                "combined_tn": metrics["combined_metrics"]["tn"],
             }
 
             for dataset_name, dataset_metrics in metrics["per_dataset_metrics"].items():
@@ -430,11 +450,12 @@ def main() -> None:
                 row[f"{dataset_name}_recall"] = dataset_metrics["recall"]
                 row[f"{dataset_name}_f1"] = dataset_metrics["f1"]
                 row[f"{dataset_name}_accuracy"] = dataset_metrics["accuracy"]
+                row[f"{dataset_name}_specificity"] = dataset_metrics["specificity"]
+                row[f"{dataset_name}_balanced_accuracy"] = dataset_metrics["balanced_accuracy"]
 
             sweep_results.append(row)
 
-        out_metrics = PROJECT_ROOT / args.out_metrics
-        payload = {
+        sweep_payload = {
             "stage": "stage3_threshold_sweep",
             "label_definition": {
                 "positive": "1 = hallucinated",
@@ -442,13 +463,20 @@ def main() -> None:
             },
             "top_k": int(args.top_k),
             "alpha": float(args.alpha),
+            "thresholds": thresholds,
             "results": sweep_results,
-            "notes": "Choose threshold based on combined metrics first; use per-dataset metrics as secondary analysis.",
+            "notes": {
+                "evaluation": "Threshold sweep is performed on the merged binary dataset from Stage-1.",
+                "selection_guidance": "Choose threshold based on combined metrics first; use per-dataset metrics as secondary analysis.",
+                "prediction_rule": "Predict hallucinated when support_score < threshold.",
+            },
         }
-        out_metrics.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+
+        sweep_path = resolve_output_path(args.save_sweep_path)
+        sweep_path.write_text(json.dumps(sweep_payload, indent=2, ensure_ascii=False), encoding="utf-8")
 
         print("\n[Stage-3] Threshold sweep written:")
-        print(f"  - {out_metrics}")
+        print(f"  - {sweep_path}")
         print("\n[Stage-3] Sweep results:")
         for item in sweep_results:
             print(item)
@@ -464,8 +492,8 @@ def main() -> None:
 
     logs, metrics = run_verification(df, verifier)
 
-    out_jsonl = PROJECT_ROOT / args.out_jsonl
-    out_metrics = PROJECT_ROOT / args.out_metrics
+    out_jsonl = resolve_output_path(args.out_jsonl)
+    out_metrics = resolve_output_path(args.out_metrics)
 
     with out_jsonl.open("w", encoding="utf-8") as f:
         for record in logs:
