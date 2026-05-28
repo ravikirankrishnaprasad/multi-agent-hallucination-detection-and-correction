@@ -11,6 +11,16 @@ This repository contains the implementation accompanying the MSc dissertation su
 The project investigates methods for **detecting and correcting hallucinations in Large Language Model (LLM) outputs** using a modular multi-agent verification framework.
 
 ---
+
+## Research Preprint This repository accompanies the research preprint: **A Lightweight Retrieval-Grounded Multi-Agent Framework for Hallucination Detection and Correction in Large Language Models** 
+
+The manuscript is available as a preprint on **Research Square** and is currently under journal review. 
+
+- Preprint: [Research Square](ADD_RESEARCH_SQUARE_LINK_HERE)
+- LINK: [DOI](https://doi.org/10.21203/rs.3.rs-9749892/v1)
+- ORCID: [Ravikiran Krishnaprasad](https://orcid.org/0009-0002-1574-9770)
+
+---
 # Overview
 Large Language Models often generate **hallucinated responses**, where statements appear plausible but are not supported by factual evidence.
 
