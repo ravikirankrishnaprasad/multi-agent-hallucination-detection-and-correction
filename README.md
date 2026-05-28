@@ -24,7 +24,6 @@ The manuscript is available as a preprint on **Research Square** and is currentl
 
 ---
 
-````markdown
 # Citation
 
 If you use this repository, code, or refer to this work in research or academic projects, please cite the associated Research Square preprint:
@@ -41,7 +40,6 @@ If you use this repository, code, or refer to this work in research or academic 
 ```
 
 This repository originated from the MSc Artificial Intelligence and Machine Learning dissertation work submitted to Liverpool John Moores University.
-````
 
 
 ---
