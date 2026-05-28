@@ -1,8 +1,9 @@
 ```yaml
 cff-version: 1.2.0
-title: "A Lightweight Retrieval-Grounded Multi-Agent Framework for Hallucination Detection and Correction in Large Language Models"
-message: "If you use this repository or refer to this work, please cite the Research Square preprint."
-type: article
+title: "Multi-Agent Hallucination Detection and Correction System"
+message: "If you use this repository or refer to this work, please cite the associated Research Square preprint."
+type: software
+
 authors:
   - family-names: "Krishnaprasad"
     given-names: "Ravikiran"
@@ -10,10 +11,11 @@ authors:
     orcid: "https://orcid.org/0009-0002-1574-9770"
 
 year: 2026
-doi: "https://doi.org/10.21203/rs.3.rs-9749892/v1"
-url: "https://www.researchsquare.com/"
 repository-code: "https://github.com/ravikirankrishnaprasad/multi-agent-hallucination-detection-and-correction"
-abstract: "This work presents a lightweight retrieval-grounded multi-agent framework for detecting and correcting hallucinations in Large Language Model outputs using evidence-based verification and correction."
+license: "MIT"
+
+abstract: "This repository contains the implementation of a lightweight retrieval-grounded multi-agent framework for detecting and correcting hallucinations in Large Language Model outputs using evidence-based verification and correction."
+
 keywords:
   - "Large Language Models"
   - "Hallucination Detection"
@@ -21,6 +23,16 @@ keywords:
   - "Retrieval-Augmented Generation"
   - "Responsible AI"
   - "Multi-Agent Systems"
-license: "MIT"
-```
 
+preferred-citation:
+  type: article
+  title: "A Lightweight Retrieval-Grounded Multi-Agent Framework for Hallucination Detection and Correction in Large Language Models"
+  authors:
+    - family-names: "Krishnaprasad"
+      given-names: "Ravikiran"
+      affiliation: "Liverpool John Moores University"
+      orcid: "https://orcid.org/0009-0002-1574-9770"
+  year: 2026
+  doi: "https://doi.org/10.21203/rs.3.rs-9749892/v1"
+  url: "https://www.researchsquare.com/article/rs-9749892/v1"
+```
