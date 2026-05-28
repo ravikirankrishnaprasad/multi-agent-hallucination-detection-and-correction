@@ -12,7 +12,9 @@ The project investigates methods for **detecting and correcting hallucinations i
 
 ---
 
-## Research Preprint This repository accompanies the research preprint: **A Lightweight Retrieval-Grounded Multi-Agent Framework for Hallucination Detection and Correction in Large Language Models** 
+## Research Preprint 
+
+This repository accompanies the research preprint: **A Lightweight Retrieval-Grounded Multi-Agent Framework for Hallucination Detection and Correction in Large Language Models** 
 
 The manuscript is available as a preprint on **Research Square** and is currently under journal review. 
 
