@@ -18,7 +18,7 @@ This repository accompanies the research preprint: **A Lightweight Retrieval-Gro
 
 The manuscript is available as a preprint on **Research Square** and is currently under journal review. 
 
-- Preprint: [Research Square](ADD_RESEARCH_SQUARE_LINK_HERE)
+- Preprint: [Research Square](https://www.researchsquare.com/)
 - LINK: [DOI](https://doi.org/10.21203/rs.3.rs-9749892/v1)
 - ORCID: [Ravikiran Krishnaprasad](https://orcid.org/0009-0002-1574-9770)
 
