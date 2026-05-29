@@ -22,27 +22,8 @@ The manuscript is available as a preprint on **Research Square** and is currentl
 - LINK: [DOI](https://doi.org/10.21203/rs.3.rs-9749892/v1)
 - ORCID: [Ravikiran Krishnaprasad](https://orcid.org/0009-0002-1574-9770)
 
----
+--- 
 
-# Citation
-
-If you use this repository, code, or refer to this work in research or academic projects, please cite the associated Research Square preprint:
-
-```bibtex
-@article{krishnaprasad2026lightweight,
-  title={A Lightweight Retrieval-Grounded Multi-Agent Framework for Hallucination Detection and Correction in Large Language Models},
-  author={Krishnaprasad, Ravikiran},
-  year={2026},
-  doi={10.21203/rs.3.rs-9749892/v1},
-  url={https://doi.org/10.21203/rs.3.rs-9749892/v1},
-  note={Preprint available at Research Square}
-}
-```
-
-This repository originated from the MSc Artificial Intelligence and Machine Learning dissertation work submitted to Liverpool John Moores University.
-
-
----
 # Overview
 Large Language Models often generate **hallucinated responses**, where statements appear plausible but are not supported by factual evidence.
 
@@ -240,14 +221,21 @@ This project is released under the **MIT License**.
 ---
 # Citation
 
-If you use this work in research or academic projects, please cite the dissertation as:
+If you use this repository, code, or refer to this work in research or academic projects, please cite the associated Research Square preprint:
 
-```id="citation"
-Ravikiran VK (2026).
-Multi-Agent Hallucination Detection and Correction System.
-MSc Artificial Intelligence & Machine Learning Dissertation,
-Liverpool John Moores University.
+```bibtex
+@article{krishnaprasad2026lightweight,
+  title={A Lightweight Retrieval-Grounded Multi-Agent Framework for Hallucination Detection and Correction in Large Language Models},
+  author={Krishnaprasad, Ravikiran},
+  year={2026},
+  doi={10.21203/rs.3.rs-9749892/v1},
+  url={https://doi.org/10.21203/rs.3.rs-9749892/v1},
+  note={Preprint available at Research Square}
+}
 ```
+
+This repository originated from the MSc Artificial Intelligence and Machine Learning dissertation work submitted to Liverpool John Moores University.
+
 ---
 # Author
 
