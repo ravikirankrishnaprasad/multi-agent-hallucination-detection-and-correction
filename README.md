@@ -8,6 +8,22 @@
 
 This repository contains the implementation accompanying the MSc dissertation submitted to **Liverpool John Moores University (LJMU)**.
 
+## Journal v2 Experiments
+
+The dissertation (v1) scripts remain intact as the historical baseline. Journal v2 adds a separate, reproducible modular retrieval-grounded pipeline after v1's dataset-label correlation made merged-only evaluation weak. It retains MedHallu and TruthfulQA, but constructs explicit factual/hallucinated counterparts within each dataset and reports them separately.
+
+First create the v1 processed dataset if it is not already present, then run:
+
+```bash
+python experiments/journal_v2/run_dataset_builder.py --input data/processed/hallu_detection_dataset.csv --out_dir results/journal_v2 --random_seed 42 --dev_size .20 --test_size .20 --stratified
+python experiments/journal_v2/run_threshold_selection.py --input data/processed/hallu_detection_dataset.csv --splits results/journal_v2/split_assignments.csv --out_dir results/journal_v2
+python experiments/journal_v2/run_detection.py --input data/processed/hallu_detection_dataset.csv --splits results/journal_v2/split_assignments.csv --selected_threshold results/journal_v2/selected_threshold.json --out_dir results/journal_v2
+python experiments/journal_v2/run_correction.py --predictions results/journal_v2/predictions.jsonl --enable_abstention --out_dir results/journal_v2
+python experiments/journal_v2/run_ablation.py --input data/processed/hallu_detection_dataset.csv --splits results/journal_v2/split_assignments.csv --out_dir results/journal_v2
+```
+
+Outputs include constructed-data/split summaries, dev sweep and selected threshold, test predictions and metrics, gated corrections and regression metrics, ablations, and representative error analysis. See [the v2 methodology](docs/journal_v2_methodology.md) for protocol and limitations.
+
 The project investigates methods for **detecting and correcting hallucinations in Large Language Model (LLM) outputs** using a modular multi-agent verification framework.
 
 ---

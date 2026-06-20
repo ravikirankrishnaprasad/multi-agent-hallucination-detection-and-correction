@@ -1,0 +1,676 @@
+{
+  "rows": [
+    {
+      "method": "retrieve_only",
+      "threshold": 0.55,
+      "precision": 0.5,
+      "recall": 0.8191543555781966,
+      "f1": 0.6209692990924889,
+      "macro_f1": 0.4435687616957772,
+      "accuracy": 0.5001273236567354,
+      "specificity": 0.18126272912423624,
+      "balanced_accuracy": 0.5002085423512164,
+      "false_positive_rate": 0.8187372708757638,
+      "confusion_matrix": [
+        [
+          356,
+          1608
+        ],
+        [
+          355,
+          1608
+        ]
+      ],
+      "n": 3927,
+      "label_counts": {
+        "0": 1964,
+        "1": 1963
+      },
+      "per_dataset_summary": {
+        "medhallu": {
+          "precision": 0.4989912575655683,
+          "recall": 0.8253615127919911,
+          "f1": 0.6219614417435038,
+          "macro_f1": 0.44100533120809315,
+          "accuracy": 0.49958391123439666,
+          "specificity": 0.1754288876591035,
+          "balanced_accuracy": 0.5003952002255473,
+          "false_positive_rate": 0.8245711123408965,
+          "confusion_matrix": [
+            [
+              317,
+              1490
+            ],
+            [
+              314,
+              1484
+            ]
+          ],
+          "n": 3605,
+          "label_counts": {
+            "0": 1807,
+            "1": 1798
+          }
+        },
+        "truthfulqa": {
+          "precision": 0.512396694214876,
+          "recall": 0.7515151515151515,
+          "f1": 0.6093366093366094,
+          "macro_f1": 0.46922526669362113,
+          "accuracy": 0.5062111801242236,
+          "specificity": 0.2484076433121019,
+          "balanced_accuracy": 0.49996139741362666,
+          "false_positive_rate": 0.7515923566878981,
+          "confusion_matrix": [
+            [
+              39,
+              118
+            ],
+            [
+              41,
+              124
+            ]
+          ],
+          "n": 322,
+          "label_counts": {
+            "0": 157,
+            "1": 165
+          }
+        }
+      },
+      "corrected_cases": 3216,
+      "corrected_positive_cases": 1608,
+      "abstained_cases": 0,
+      "fixed_positive_cases": 33,
+      "regression_cases": 1608,
+      "regression_rate": 0.4094728800611154,
+      "positive_hallucination_reduction": 0.016811003565970453,
+      "correction_accuracy": 0.020522388059701493,
+      "after_hallucination_rate": 0.8859180035650623
+    },
+    {
+      "method": "answer_evidence_only",
+      "threshold": 0.55,
+      "precision": 0.524008350730689,
+      "recall": 0.8950585838003057,
+      "f1": 0.6610233258088789,
+      "macro_f1": 0.47550772279411635,
+      "accuracy": 0.5411255411255411,
+      "specificity": 0.18737270875763748,
+      "balanced_accuracy": 0.5412156462789716,
+      "false_positive_rate": 0.8126272912423625,
+      "confusion_matrix": [
+        [
+          368,
+          1596
+        ],
+        [
+          206,
+          1757
+        ]
+      ],
+      "n": 3927,
+      "label_counts": {
+        "0": 1964,
+        "1": 1963
+      },
+      "per_dataset_summary": {
+        "medhallu": {
+          "precision": 0.5237633365664404,
+          "recall": 0.9010011123470523,
+          "f1": 0.6624412185647107,
+          "macro_f1": 0.4752482073849858,
+          "accuracy": 0.5420249653259362,
+          "specificity": 0.18483674598782512,
+          "balanced_accuracy": 0.5429189291674387,
+          "false_positive_rate": 0.8151632540121748,
+          "confusion_matrix": [
+            [
+              334,
+              1473
+            ],
+            [
+              178,
+              1620
+            ]
+          ],
+          "n": 3605,
+          "label_counts": {
+            "0": 1807,
+            "1": 1798
+          }
+        },
+        "truthfulqa": {
+          "precision": 0.5269230769230769,
+          "recall": 0.8303030303030303,
+          "f1": 0.6447058823529411,
+          "macro_f1": 0.47760408272898197,
+          "accuracy": 0.531055900621118,
+          "specificity": 0.21656050955414013,
+          "balanced_accuracy": 0.5234317699285852,
+          "false_positive_rate": 0.7834394904458599,
+          "confusion_matrix": [
+            [
+              34,
+              123
+            ],
+            [
+              28,
+              137
+            ]
+          ],
+          "n": 322,
+          "label_counts": {
+            "0": 157,
+            "1": 165
+          }
+        }
+      },
+      "corrected_cases": 3353,
+      "corrected_positive_cases": 1757,
+      "abstained_cases": 0,
+      "fixed_positive_cases": 177,
+      "regression_cases": 1596,
+      "regression_rate": 0.40641711229946526,
+      "positive_hallucination_reduction": 0.09016811003565971,
+      "correction_accuracy": 0.10073989755264656,
+      "after_hallucination_rate": 0.8479755538579068
+    },
+    {
+      "method": "query_evidence_only",
+      "threshold": 0.55,
+      "precision": 0.5,
+      "recall": 0.8191543555781966,
+      "f1": 0.6209692990924889,
+      "macro_f1": 0.4435687616957772,
+      "accuracy": 0.5001273236567354,
+      "specificity": 0.18126272912423624,
+      "balanced_accuracy": 0.5002085423512164,
+      "false_positive_rate": 0.8187372708757638,
+      "confusion_matrix": [
+        [
+          356,
+          1608
+        ],
+        [
+          355,
+          1608
+        ]
+      ],
+      "n": 3927,
+      "label_counts": {
+        "0": 1964,
+        "1": 1963
+      },
+      "per_dataset_summary": {
+        "medhallu": {
+          "precision": 0.4989912575655683,
+          "recall": 0.8253615127919911,
+          "f1": 0.6219614417435038,
+          "macro_f1": 0.44100533120809315,
+          "accuracy": 0.49958391123439666,
+          "specificity": 0.1754288876591035,
+          "balanced_accuracy": 0.5003952002255473,
+          "false_positive_rate": 0.8245711123408965,
+          "confusion_matrix": [
+            [
+              317,
+              1490
+            ],
+            [
+              314,
+              1484
+            ]
+          ],
+          "n": 3605,
+          "label_counts": {
+            "0": 1807,
+            "1": 1798
+          }
+        },
+        "truthfulqa": {
+          "precision": 0.512396694214876,
+          "recall": 0.7515151515151515,
+          "f1": 0.6093366093366094,
+          "macro_f1": 0.46922526669362113,
+          "accuracy": 0.5062111801242236,
+          "specificity": 0.2484076433121019,
+          "balanced_accuracy": 0.49996139741362666,
+          "false_positive_rate": 0.7515923566878981,
+          "confusion_matrix": [
+            [
+              39,
+              118
+            ],
+            [
+              41,
+              124
+            ]
+          ],
+          "n": 322,
+          "label_counts": {
+            "0": 157,
+            "1": 165
+          }
+        }
+      },
+      "corrected_cases": 3216,
+      "corrected_positive_cases": 1608,
+      "abstained_cases": 0,
+      "fixed_positive_cases": 33,
+      "regression_cases": 1608,
+      "regression_rate": 0.4094728800611154,
+      "positive_hallucination_reduction": 0.016811003565970453,
+      "correction_accuracy": 0.020522388059701493,
+      "after_hallucination_rate": 0.8859180035650623
+    },
+    {
+      "method": "weighted",
+      "threshold": 0.55,
+      "precision": 0.5157766990291263,
+      "recall": 0.8660213958227203,
+      "f1": 0.646510743487355,
+      "macro_f1": 0.4650665470808644,
+      "accuracy": 0.5266106442577031,
+      "specificity": 0.18737270875763748,
+      "balanced_accuracy": 0.5266970522901789,
+      "false_positive_rate": 0.8126272912423625,
+      "confusion_matrix": [
+        [
+          368,
+          1596
+        ],
+        [
+          263,
+          1700
+        ]
+      ],
+      "n": 3927,
+      "label_counts": {
+        "0": 1964,
+        "1": 1963
+      },
+      "per_dataset_summary": {
+        "medhallu": {
+          "precision": 0.5153010858835143,
+          "recall": 0.8709677419354839,
+          "f1": 0.6475087864378747,
+          "macro_f1": 0.4645044985708126,
+          "accuracy": 0.5270457697642164,
+          "specificity": 0.18483674598782512,
+          "balanced_accuracy": 0.5279022439616545,
+          "false_positive_rate": 0.8151632540121748,
+          "confusion_matrix": [
+            [
+              334,
+              1473
+            ],
+            [
+              232,
+              1566
+            ]
+          ],
+          "n": 3605,
+          "label_counts": {
+            "0": 1807,
+            "1": 1798
+          }
+        },
+        "truthfulqa": {
+          "precision": 0.5214007782101168,
+          "recall": 0.8121212121212121,
+          "f1": 0.6350710900473934,
+          "macro_f1": 0.47068869817684983,
+          "accuracy": 0.5217391304347826,
+          "specificity": 0.21656050955414013,
+          "balanced_accuracy": 0.5143408608376762,
+          "false_positive_rate": 0.7834394904458599,
+          "confusion_matrix": [
+            [
+              34,
+              123
+            ],
+            [
+              31,
+              134
+            ]
+          ],
+          "n": 322,
+          "label_counts": {
+            "0": 157,
+            "1": 165
+          }
+        }
+      },
+      "corrected_cases": 3296,
+      "corrected_positive_cases": 1700,
+      "abstained_cases": 0,
+      "fixed_positive_cases": 121,
+      "regression_cases": 1596,
+      "regression_rate": 0.40641711229946526,
+      "positive_hallucination_reduction": 0.06164034640855833,
+      "correction_accuracy": 0.0711764705882353,
+      "after_hallucination_rate": 0.8614718614718615
+    },
+    {
+      "method": "verify_only",
+      "threshold": 0.55,
+      "precision": 0.5157766990291263,
+      "recall": 0.8660213958227203,
+      "f1": 0.646510743487355,
+      "macro_f1": 0.4650665470808644,
+      "accuracy": 0.5266106442577031,
+      "specificity": 0.18737270875763748,
+      "balanced_accuracy": 0.5266970522901789,
+      "false_positive_rate": 0.8126272912423625,
+      "confusion_matrix": [
+        [
+          368,
+          1596
+        ],
+        [
+          263,
+          1700
+        ]
+      ],
+      "n": 3927,
+      "label_counts": {
+        "0": 1964,
+        "1": 1963
+      },
+      "per_dataset_summary": {
+        "medhallu": {
+          "precision": 0.5153010858835143,
+          "recall": 0.8709677419354839,
+          "f1": 0.6475087864378747,
+          "macro_f1": 0.4645044985708126,
+          "accuracy": 0.5270457697642164,
+          "specificity": 0.18483674598782512,
+          "balanced_accuracy": 0.5279022439616545,
+          "false_positive_rate": 0.8151632540121748,
+          "confusion_matrix": [
+            [
+              334,
+              1473
+            ],
+            [
+              232,
+              1566
+            ]
+          ],
+          "n": 3605,
+          "label_counts": {
+            "0": 1807,
+            "1": 1798
+          }
+        },
+        "truthfulqa": {
+          "precision": 0.5214007782101168,
+          "recall": 0.8121212121212121,
+          "f1": 0.6350710900473934,
+          "macro_f1": 0.47068869817684983,
+          "accuracy": 0.5217391304347826,
+          "specificity": 0.21656050955414013,
+          "balanced_accuracy": 0.5143408608376762,
+          "false_positive_rate": 0.7834394904458599,
+          "confusion_matrix": [
+            [
+              34,
+              123
+            ],
+            [
+              31,
+              134
+            ]
+          ],
+          "n": 322,
+          "label_counts": {
+            "0": 157,
+            "1": 165
+          }
+        }
+      },
+      "corrected_cases": 0,
+      "corrected_positive_cases": 0,
+      "abstained_cases": 0,
+      "fixed_positive_cases": 0,
+      "regression_cases": 0,
+      "regression_rate": 0.0,
+      "positive_hallucination_reduction": 0.0,
+      "correction_accuracy": 0.0,
+      "after_hallucination_rate": 0.4998726763432646
+    },
+    {
+      "method": "verify_then_correct",
+      "threshold": 0.55,
+      "precision": 0.5157766990291263,
+      "recall": 0.8660213958227203,
+      "f1": 0.646510743487355,
+      "macro_f1": 0.4650665470808644,
+      "accuracy": 0.5266106442577031,
+      "specificity": 0.18737270875763748,
+      "balanced_accuracy": 0.5266970522901789,
+      "false_positive_rate": 0.8126272912423625,
+      "confusion_matrix": [
+        [
+          368,
+          1596
+        ],
+        [
+          263,
+          1700
+        ]
+      ],
+      "n": 3927,
+      "label_counts": {
+        "0": 1964,
+        "1": 1963
+      },
+      "per_dataset_summary": {
+        "medhallu": {
+          "precision": 0.5153010858835143,
+          "recall": 0.8709677419354839,
+          "f1": 0.6475087864378747,
+          "macro_f1": 0.4645044985708126,
+          "accuracy": 0.5270457697642164,
+          "specificity": 0.18483674598782512,
+          "balanced_accuracy": 0.5279022439616545,
+          "false_positive_rate": 0.8151632540121748,
+          "confusion_matrix": [
+            [
+              334,
+              1473
+            ],
+            [
+              232,
+              1566
+            ]
+          ],
+          "n": 3605,
+          "label_counts": {
+            "0": 1807,
+            "1": 1798
+          }
+        },
+        "truthfulqa": {
+          "precision": 0.5214007782101168,
+          "recall": 0.8121212121212121,
+          "f1": 0.6350710900473934,
+          "macro_f1": 0.47068869817684983,
+          "accuracy": 0.5217391304347826,
+          "specificity": 0.21656050955414013,
+          "balanced_accuracy": 0.5143408608376762,
+          "false_positive_rate": 0.7834394904458599,
+          "confusion_matrix": [
+            [
+              34,
+              123
+            ],
+            [
+              31,
+              134
+            ]
+          ],
+          "n": 322,
+          "label_counts": {
+            "0": 157,
+            "1": 165
+          }
+        }
+      },
+      "corrected_cases": 3296,
+      "corrected_positive_cases": 1700,
+      "abstained_cases": 0,
+      "fixed_positive_cases": 121,
+      "regression_cases": 1596,
+      "regression_rate": 0.40641711229946526,
+      "positive_hallucination_reduction": 0.06164034640855833,
+      "correction_accuracy": 0.0711764705882353,
+      "after_hallucination_rate": 0.8614718614718615
+    },
+    {
+      "method": "verify_then_gated_correct",
+      "threshold": 0.55,
+      "precision": 0.5157766990291263,
+      "recall": 0.8660213958227203,
+      "f1": 0.646510743487355,
+      "macro_f1": 0.4650665470808644,
+      "accuracy": 0.5266106442577031,
+      "specificity": 0.18737270875763748,
+      "balanced_accuracy": 0.5266970522901789,
+      "false_positive_rate": 0.8126272912423625,
+      "confusion_matrix": [
+        [
+          368,
+          1596
+        ],
+        [
+          263,
+          1700
+        ]
+      ],
+      "n": 3927,
+      "label_counts": {
+        "0": 1964,
+        "1": 1963
+      },
+      "per_dataset_summary": {
+        "medhallu": {
+          "precision": 0.5153010858835143,
+          "recall": 0.8709677419354839,
+          "f1": 0.6475087864378747,
+          "macro_f1": 0.4645044985708126,
+          "accuracy": 0.5270457697642164,
+          "specificity": 0.18483674598782512,
+          "balanced_accuracy": 0.5279022439616545,
+          "false_positive_rate": 0.8151632540121748,
+          "confusion_matrix": [
+            [
+              334,
+              1473
+            ],
+            [
+              232,
+              1566
+            ]
+          ],
+          "n": 3605,
+          "label_counts": {
+            "0": 1807,
+            "1": 1798
+          }
+        },
+        "truthfulqa": {
+          "precision": 0.5214007782101168,
+          "recall": 0.8121212121212121,
+          "f1": 0.6350710900473934,
+          "macro_f1": 0.47068869817684983,
+          "accuracy": 0.5217391304347826,
+          "specificity": 0.21656050955414013,
+          "balanced_accuracy": 0.5143408608376762,
+          "false_positive_rate": 0.7834394904458599,
+          "confusion_matrix": [
+            [
+              34,
+              123
+            ],
+            [
+              31,
+              134
+            ]
+          ],
+          "n": 322,
+          "label_counts": {
+            "0": 157,
+            "1": 165
+          }
+        }
+      },
+      "corrected_cases": 1855,
+      "corrected_positive_cases": 899,
+      "abstained_cases": 1441,
+      "fixed_positive_cases": 20,
+      "regression_cases": 956,
+      "regression_rate": 0.2434428316781258,
+      "positive_hallucination_reduction": 0.010188487009679063,
+      "correction_accuracy": 0.02224694104560623,
+      "after_hallucination_rate": 0.6987522281639929
+    }
+  ],
+  "config": {
+    "input": "data/processed/hallu_detection_dataset.csv",
+    "splits": "results/journal_v2/split_assignments.csv",
+    "selected_threshold": "results/journal_v2/selected_threshold.json",
+    "out_dir": "results/journal_v2",
+    "top_k": 5,
+    "alpha": 0.7,
+    "threshold": null,
+    "min_retrieval_confidence": 0.2,
+    "max_answer_support": 0.3,
+    "limit": 0,
+    "dry_run": false
+  },
+  "selected_threshold": {
+    "threshold": 0.55,
+    "selection_metric": "macro_f1",
+    "dev_metrics": {
+      "threshold": 0.55,
+      "precision": 0.5191004313000616,
+      "recall": 0.8579429735234216,
+      "f1": 0.6468330134357005,
+      "macro_f1": 0.47545886677836463,
+      "accuracy": 0.5314489432136491,
+      "specificity": 0.20478858889454915,
+      "balanced_accuracy": 0.5313657812089854,
+      "false_positive_rate": 0.7952114111054508,
+      "confusion_matrix": [
+        [
+          402,
+          1561
+        ],
+        [
+          279,
+          1685
+        ]
+      ],
+      "n": 3927,
+      "label_counts": {
+        "0": 1963,
+        "1": 1964
+      }
+    },
+    "config": {
+      "input": "data/processed/hallu_detection_dataset.csv",
+      "splits": "results/journal_v2/split_assignments.csv",
+      "out_dir": "results/journal_v2",
+      "top_k": 5,
+      "alpha": 0.7,
+      "thresholds": "0.10,0.15,0.20,0.25,0.30,0.35,0.40,0.45,0.50,0.55",
+      "selection_metric": "macro_f1",
+      "limit": 0,
+      "limit_medhallu": 0,
+      "limit_truthfulqa": 0,
+      "dry_run": false
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "threshold": 0.55,
+  "selection_metric": "macro_f1",
+  "dev_metrics": {
+    "threshold": 0.55,
+    "precision": 0.5191004313000616,
+    "recall": 0.8579429735234216,
+    "f1": 0.6468330134357005,
+    "macro_f1": 0.47545886677836463,
+    "accuracy": 0.5314489432136491,
+    "specificity": 0.20478858889454915,
+    "balanced_accuracy": 0.5313657812089854,
+    "false_positive_rate": 0.7952114111054508,
+    "confusion_matrix": [
+      [
+        402,
+        1561
+      ],
+      [
+        279,
+        1685
+      ]
+    ],
+    "n": 3927,
+    "label_counts": {
+      "0": 1963,
+      "1": 1964
+    }
+  },
+  "config": {
+    "input": "data/processed/hallu_detection_dataset.csv",
+    "splits": "results/journal_v2/split_assignments.csv",
+    "out_dir": "results/journal_v2",
+    "top_k": 5,
+    "alpha": 0.7,
+    "thresholds": "0.10,0.15,0.20,0.25,0.30,0.35,0.40,0.45,0.50,0.55",
+    "selection_metric": "macro_f1",
+    "limit": 0,
+    "limit_medhallu": 0,
+    "limit_truthfulqa": 0,
+    "dry_run": false
+  }
+}

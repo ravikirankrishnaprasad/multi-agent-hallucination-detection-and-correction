@@ -1,0 +1,93 @@
+{
+  "split": "test",
+  "threshold": 0.55,
+  "overall": {
+    "precision": 0.5157766990291263,
+    "recall": 0.8660213958227203,
+    "f1": 0.646510743487355,
+    "macro_f1": 0.4650665470808644,
+    "accuracy": 0.5266106442577031,
+    "specificity": 0.18737270875763748,
+    "balanced_accuracy": 0.5266970522901789,
+    "false_positive_rate": 0.8126272912423625,
+    "confusion_matrix": [
+      [
+        368,
+        1596
+      ],
+      [
+        263,
+        1700
+      ]
+    ],
+    "n": 3927,
+    "label_counts": {
+      "0": 1964,
+      "1": 1963
+    }
+  },
+  "per_dataset": {
+    "medhallu": {
+      "precision": 0.5153010858835143,
+      "recall": 0.8709677419354839,
+      "f1": 0.6475087864378747,
+      "macro_f1": 0.4645044985708126,
+      "accuracy": 0.5270457697642164,
+      "specificity": 0.18483674598782512,
+      "balanced_accuracy": 0.5279022439616545,
+      "false_positive_rate": 0.8151632540121748,
+      "confusion_matrix": [
+        [
+          334,
+          1473
+        ],
+        [
+          232,
+          1566
+        ]
+      ],
+      "n": 3605,
+      "label_counts": {
+        "0": 1807,
+        "1": 1798
+      }
+    },
+    "truthfulqa": {
+      "precision": 0.5214007782101168,
+      "recall": 0.8121212121212121,
+      "f1": 0.6350710900473934,
+      "macro_f1": 0.47068869817684983,
+      "accuracy": 0.5217391304347826,
+      "specificity": 0.21656050955414013,
+      "balanced_accuracy": 0.5143408608376762,
+      "false_positive_rate": 0.7834394904458599,
+      "confusion_matrix": [
+        [
+          34,
+          123
+        ],
+        [
+          31,
+          134
+        ]
+      ],
+      "n": 322,
+      "label_counts": {
+        "0": 157,
+        "1": 165
+      }
+    }
+  },
+  "config": {
+    "input": "data/processed/hallu_detection_dataset.csv",
+    "splits": "results/journal_v2/split_assignments.csv",
+    "selected_threshold": "results/journal_v2/selected_threshold.json",
+    "out_dir": "results/journal_v2",
+    "top_k": 5,
+    "alpha": 0.7,
+    "limit": 0,
+    "limit_medhallu": 0,
+    "limit_truthfulqa": 0,
+    "dry_run": false
+  }
+}
