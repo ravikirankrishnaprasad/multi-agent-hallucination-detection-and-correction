@@ -1,0 +1,13 @@
+{
+  "min_retrieval_confidence": 0.2,
+  "max_answer_support": 0.1,
+  "min_evidence_support": 0.2,
+  "corrected_cases": 14.0,
+  "abstention_rate": 0.1390020366598778,
+  "regression_rate": 0.0,
+  "fixed_positive_cases": 14.0,
+  "positive_hallucination_reduction": 0.007128309572301426,
+  "correction_accuracy": 1.0,
+  "selected_on_dev": true,
+  "evaluated_on_test": false
+}

@@ -1,0 +1,103 @@
+{
+  "schema": [
+    "sample_id",
+    "dataset",
+    "question",
+    "answer",
+    "ground_truth",
+    "label",
+    "category",
+    "difficulty",
+    "source"
+  ],
+  "n_samples": 19634,
+  "construction": "Within-dataset derived factual/hallucinated examples; see derived_from in the constructed data.",
+  "label_counts_by_dataset_split": [
+    {
+      "dataset": "medhallu",
+      "split": "dev",
+      "label": 0,
+      "count": 1801
+    },
+    {
+      "dataset": "medhallu",
+      "split": "dev",
+      "label": 1,
+      "count": 1801
+    },
+    {
+      "dataset": "medhallu",
+      "split": "test",
+      "label": 0,
+      "count": 1806
+    },
+    {
+      "dataset": "medhallu",
+      "split": "test",
+      "label": 1,
+      "count": 1806
+    },
+    {
+      "dataset": "medhallu",
+      "split": "train",
+      "label": 0,
+      "count": 5393
+    },
+    {
+      "dataset": "medhallu",
+      "split": "train",
+      "label": 1,
+      "count": 5393
+    },
+    {
+      "dataset": "truthfulqa",
+      "split": "dev",
+      "label": 0,
+      "count": 163
+    },
+    {
+      "dataset": "truthfulqa",
+      "split": "dev",
+      "label": 1,
+      "count": 163
+    },
+    {
+      "dataset": "truthfulqa",
+      "split": "test",
+      "label": 0,
+      "count": 159
+    },
+    {
+      "dataset": "truthfulqa",
+      "split": "test",
+      "label": 1,
+      "count": 159
+    },
+    {
+      "dataset": "truthfulqa",
+      "split": "train",
+      "label": 0,
+      "count": 495
+    },
+    {
+      "dataset": "truthfulqa",
+      "split": "train",
+      "label": 1,
+      "count": 495
+    }
+  ],
+  "warnings": [],
+  "config": {
+    "input": "data/processed/hallu_detection_dataset.csv",
+    "out_dir": "results/journal_v2",
+    "random_seed": 42,
+    "dev_size": 0.2,
+    "test_size": 0.2,
+    "stratified": true,
+    "dataset_filter": "",
+    "limit": 0,
+    "limit_medhallu": 0,
+    "limit_truthfulqa": 0,
+    "dry_run": false
+  }
+}

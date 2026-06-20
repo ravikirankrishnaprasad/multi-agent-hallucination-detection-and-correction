@@ -1,0 +1,4 @@
+{
+  "status": "skipped",
+  "reason": "Hybrid requires aligned TF-IDF score caching; embedding baseline completed."
+}
