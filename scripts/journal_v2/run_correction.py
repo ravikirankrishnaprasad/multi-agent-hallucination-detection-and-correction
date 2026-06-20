@@ -18,7 +18,9 @@ def metrics(rows):
     regressions=sum(r["label"]==0 and r["correction_applied"] and r["after_hallucinated"] for r in rows)
     return {"n":total,"corrected_cases":corrected,"corrected_positive_cases":corrected_positives,"correction_abstained_cases":abstained,"fixed_positive_cases":fixed,"regression_cases":regressions,"regression_rate":regressions/total if total else 0.,"positive_hallucination_reduction":fixed/positives if positives else 0.,"after_hallucination_rate":sum(r["after_hallucinated"] for r in rows)/total if total else 0.,"correction_accuracy":fixed/corrected_positives if corrected_positives else 0.}
 
-p=argparse.ArgumentParser(); p.add_argument("--predictions",required=True); p.add_argument("--out_dir",default="results/journal_v2"); p.add_argument("--correction_threshold",type=float,default=None); p.add_argument("--min_retrieval_confidence",type=float,default=.20); p.add_argument("--max_answer_support",type=float,default=.30); p.add_argument("--min_evidence_support",type=float,default=0.0); p.add_argument("--safe_mode",action="store_true"); p.add_argument("--max_regression_target",type=float,default=None); p.add_argument("--use_nli_gate",action="store_true",help="Require an NLI unsupported/contradiction result when present."); p.add_argument("--enable_abstention",action="store_true"); a=p.parse_args()
+p=argparse.ArgumentParser(); p.add_argument("--predictions",required=True); p.add_argument("--out_dir",default="results/journal_v2"); p.add_argument("--selected_gate",default=""); p.add_argument("--correction_threshold",type=float,default=None); p.add_argument("--min_retrieval_confidence",type=float,default=.20); p.add_argument("--max_answer_support",type=float,default=.30); p.add_argument("--min_evidence_support",type=float,default=0.0); p.add_argument("--safe_mode",action="store_true"); p.add_argument("--max_regression_target",type=float,default=None); p.add_argument("--use_nli_gate",action="store_true",help="Require an NLI unsupported/contradiction result when present."); p.add_argument("--enable_abstention",action="store_true"); a=p.parse_args()
+if a.selected_gate:
+    gate=json.loads(path(a.selected_gate).read_text(encoding="utf-8")); a.min_retrieval_confidence=float(gate["min_retrieval_confidence"]); a.max_answer_support=float(gate["max_answer_support"]); a.min_evidence_support=float(gate["min_evidence_support"]); a.safe_mode=True
 rows=[]
 for r in read_jsonl(path(a.predictions)):
     threshold=a.correction_threshold if a.correction_threshold is not None else float(r["threshold"]); predicted=bool(r["predicted_label"])
@@ -31,7 +33,7 @@ for r in read_jsonl(path(a.predictions)):
     if predicted and not eligible and a.use_nli_gate and not r.get("nli_label"): reason="nli_gate_unavailable"
     applied=bool(eligible); abstained=bool(predicted and not eligible and a.enable_abstention); corrected=r["best_evidence"] if applied else r["answer"]
     after=not bool(overlap(corrected,r["ground_truth"])>=.5) if r["label"]==1 else bool(applied)
-    rows.append({**r,"original_answer":r["answer"],"corrected_answer":corrected,"correction_applied":applied,"correction_abstained":abstained,"abstention_reason":reason if abstained else "","before_hallucinated":bool(r["label"]),"after_hallucinated":after,"regression_flag":bool(r["label"]==0 and applied and after)})
+    rows.append({**r,"original_answer":r["answer"],"corrected_answer":corrected,"correction_applied":applied,"correction_abstained":abstained,"abstention_reason":reason if abstained else "","before_hallucinated":bool(r["label"]),"after_hallucinated":after,"regression_flag":bool(r["label"]==0 and applied and after),"selected_on_dev":bool(a.selected_gate),"evaluated_on_test":r.get("split")=="test"})
 out=path(a.out_dir); out.mkdir(parents=True,exist_ok=True)
 with (out/"corrections.jsonl").open("w",encoding="utf8") as f:
  for r in rows:f.write(json.dumps(r,ensure_ascii=False)+"\n")
