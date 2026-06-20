@@ -1,0 +1,170 @@
+{
+  "tfidf_weighted": {
+    "overall": {
+      "precision": 0.9728434504792333,
+      "recall": 0.3099236641221374,
+      "f1": 0.4700887688151293,
+      "macro_f1": 0.6047540067267902,
+      "accuracy": 0.6506361323155216,
+      "specificity": 0.9913486005089058,
+      "balanced_accuracy": 0.6506361323155216,
+      "false_positive_rate": 0.008651399491094147,
+      "confusion_matrix": [
+        [
+          1948,
+          17
+        ],
+        [
+          1356,
+          609
+        ]
+      ],
+      "n": 3930,
+      "label_counts": {
+        "0": 1965,
+        "1": 1965
+      }
+    },
+    "per_dataset": {
+      "medhallu": {
+        "precision": 1.0,
+        "recall": 0.32281284606866,
+        "f1": 0.4880703223105902,
+        "macro_f1": 0.6175615313724616,
+        "accuracy": 0.6614064230343301,
+        "specificity": 1.0,
+        "balanced_accuracy": 0.66140642303433,
+        "false_positive_rate": 0.0,
+        "confusion_matrix": [
+          [
+            1806,
+            0
+          ],
+          [
+            1223,
+            583
+          ]
+        ],
+        "n": 3612,
+        "label_counts": {
+          "0": 1806,
+          "1": 1806
+        }
+      },
+      "truthfulqa": {
+        "precision": 0.6046511627906976,
+        "recall": 0.16352201257861634,
+        "f1": 0.25742574257425743,
+        "macro_f1": 0.45590181137929464,
+        "accuracy": 0.5283018867924528,
+        "specificity": 0.8930817610062893,
+        "balanced_accuracy": 0.5283018867924528,
+        "false_positive_rate": 0.1069182389937107,
+        "confusion_matrix": [
+          [
+            142,
+            17
+          ],
+          [
+            133,
+            26
+          ]
+        ],
+        "n": 318,
+        "label_counts": {
+          "0": 159,
+          "1": 159
+        }
+      }
+    }
+  },
+  "config": {
+    "input": "data/processed/hallu_detection_dataset.csv",
+    "splits": "results/journal_v2/split_assignments.csv",
+    "selected_threshold": "results/journal_v2/selected_threshold.json",
+    "out_dir": "results/journal_v2",
+    "top_k": 5,
+    "alpha": 0.7,
+    "enable_embedding": false
+  },
+  "threshold": 0.55,
+  "bm25_weighted": {
+    "overall": {
+      "precision": 0.9458128078817734,
+      "recall": 0.09770992366412214,
+      "f1": 0.17712177121771217,
+      "macro_f1": 0.43184971203190603,
+      "accuracy": 0.546055979643766,
+      "specificity": 0.9944020356234097,
+      "balanced_accuracy": 0.546055979643766,
+      "false_positive_rate": 0.0055979643765903305,
+      "confusion_matrix": [
+        [
+          1954,
+          11
+        ],
+        [
+          1773,
+          192
+        ]
+      ],
+      "n": 3930,
+      "label_counts": {
+        "0": 1965,
+        "1": 1965
+      }
+    },
+    "per_dataset": {
+      "medhallu": {
+        "precision": 1.0,
+        "recall": 0.0946843853820598,
+        "f1": 0.17298937784522003,
+        "macro_f1": 0.43069137274193536,
+        "accuracy": 0.5473421926910299,
+        "specificity": 1.0,
+        "balanced_accuracy": 0.5473421926910299,
+        "false_positive_rate": 0.0,
+        "confusion_matrix": [
+          [
+            1806,
+            0
+          ],
+          [
+            1635,
+            171
+          ]
+        ],
+        "n": 3612,
+        "label_counts": {
+          "0": 1806,
+          "1": 1806
+        }
+      },
+      "truthfulqa": {
+        "precision": 0.65625,
+        "recall": 0.1320754716981132,
+        "f1": 0.2198952879581152,
+        "macro_f1": 0.44253191364197897,
+        "accuracy": 0.5314465408805031,
+        "specificity": 0.9308176100628931,
+        "balanced_accuracy": 0.5314465408805031,
+        "false_positive_rate": 0.06918238993710692,
+        "confusion_matrix": [
+          [
+            148,
+            11
+          ],
+          [
+            138,
+            21
+          ]
+        ],
+        "n": 318,
+        "label_counts": {
+          "0": 159,
+          "1": 159
+        }
+      }
+    }
+  }
+}

@@ -12,7 +12,7 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
 from sklearn.metrics.pairwise import linear_kernel
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import StratifiedGroupKFold, train_test_split
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -106,6 +106,24 @@ def make_splits(df: pd.DataFrame, seed: int, dev_size: float, test_size: float, 
     if not 0 <= dev_size < 1 or not 0 <= test_size < 1 or dev_size + test_size >= 1:
         raise ValueError("dev_size and test_size must be >= 0 and sum to less than 1.")
     ids = df.sample_id.to_numpy()
+    # Question grouping is stricter than source-id grouping: it keeps derived
+    # siblings together and also prevents exact repeated questions from leaking
+    # across partitions under distinct source identifiers.
+    groups = df.question.map(lambda value: text(value).lower()).to_numpy()
+    # Derived factual/hallucinated siblings must never appear in different splits.
+    # The requested 60/20/20 protocol maps exactly to three folds of a 5-fold
+    # stratified group split.
+    if stratified and abs(dev_size - .2) < 1e-9 and abs(test_size - .2) < 1e-9 and len(set(groups)) >= 5:
+        splitter = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=seed)
+        folds = list(splitter.split(df, df.label, groups))
+        test_ids = ids[folds[0][1]]
+        dev_ids = ids[folds[1][1]]
+        train_ids = ids[np.concatenate([folds[i][1] for i in range(2, 5)])]
+        mapping = {x: "train" for x in train_ids} | {x: "dev" for x in dev_ids} | {x: "test" for x in test_ids}
+        out = df[["sample_id", "dataset", "label"]].copy()
+        out["original_sample_id"] = df.sample_id.map(lambda value: str(value).rsplit("::", 1)[0])
+        out["split"] = out.sample_id.map(mapping)
+        return out
     labels = df.label.to_numpy()
     strat = labels if stratified and len(np.unique(labels)) > 1 and min(np.bincount(labels)) >= 2 else None
     train_ids, hold_ids = train_test_split(ids, test_size=dev_size + test_size, random_state=seed, stratify=strat)
@@ -119,6 +137,7 @@ def make_splits(df: pd.DataFrame, seed: int, dev_size: float, test_size: float, 
         dev_ids, test_ids = [], hold_ids
     mapping = {x: "train" for x in train_ids} | {x: "dev" for x in dev_ids} | {x: "test" for x in test_ids}
     out = df[["sample_id", "dataset", "label"]].copy()
+    out["original_sample_id"] = df.sample_id.map(lambda value: str(value).rsplit("::", 1)[0])
     out["split"] = out.sample_id.map(mapping)
     return out
 

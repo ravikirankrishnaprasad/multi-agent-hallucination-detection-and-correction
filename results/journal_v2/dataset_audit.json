@@ -1,17 +1,9 @@
 {
-  "schema": [
-    "sample_id",
-    "dataset",
-    "question",
-    "answer",
-    "ground_truth",
-    "label",
-    "category",
-    "difficulty",
-    "source"
-  ],
   "n_samples": 19634,
-  "construction": "Within-dataset derived factual/hallucinated examples; see derived_from in the constructed data.",
+  "leakage_found": false,
+  "issue_counts": {
+    "duplicate_question_answer": 1
+  },
   "label_counts_by_dataset_split": [
     {
       "dataset": "medhallu",
@@ -85,19 +77,5 @@
       "label": 1,
       "count": 495
     }
-  ],
-  "warnings": [],
-  "config": {
-    "input": "data/processed/hallu_detection_dataset.csv",
-    "out_dir": "results/journal_v2",
-    "random_seed": 42,
-    "dev_size": 0.2,
-    "test_size": 0.2,
-    "stratified": true,
-    "dataset_filter": "",
-    "limit": 0,
-    "limit_medhallu": 0,
-    "limit_truthfulqa": 0,
-    "dry_run": false
-  }
+  ]
 }

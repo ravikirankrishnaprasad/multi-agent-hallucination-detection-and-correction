@@ -1,40 +1,43 @@
 {
   "overall": {
-    "n": 3927,
-    "corrected_cases": 1855,
-    "corrected_positive_cases": 899,
-    "correction_abstained_cases": 1441,
-    "fixed_positive_cases": 20,
-    "regression_cases": 956,
-    "regression_rate": 0.2434428316781258,
-    "positive_hallucination_reduction": 0.010188487009679063,
-    "after_hallucination_rate": 0.6987522281639929,
-    "correction_accuracy": 0.02224694104560623
+    "n": 3930,
+    "corrected_cases": 36,
+    "corrected_positive_cases": 36,
+    "correction_abstained_cases": 590,
+    "fixed_positive_cases": 35,
+    "regression_cases": 0,
+    "regression_rate": 0.0,
+    "positive_hallucination_reduction": 0.017811704834605598,
+    "after_hallucination_rate": 0.4223918575063613,
+    "correction_accuracy": 0.9722222222222222,
+    "correction_coverage": 0.00916030534351145,
+    "abstention_rate": 0.15012722646310434,
+    "safe_correction_rate": 0.008905852417302799
   },
   "per_dataset": {
     "medhallu": {
-      "n": 3605,
-      "corrected_cases": 1731,
-      "corrected_positive_cases": 830,
-      "correction_abstained_cases": 1308,
-      "fixed_positive_cases": 14,
-      "regression_cases": 901,
-      "regression_rate": 0.24993065187239943,
-      "positive_hallucination_reduction": 0.00778642936596218,
-      "after_hallucination_rate": 0.7165048543689321,
-      "correction_accuracy": 0.016867469879518072
+      "n": 3612,
+      "corrected_cases": 22,
+      "corrected_positive_cases": 22,
+      "correction_abstained_cases": 561,
+      "fixed_positive_cases": 21,
+      "regression_cases": 0,
+      "regression_rate": 0.0,
+      "positive_hallucination_reduction": 0.011627906976744186,
+      "after_hallucination_rate": 0.4418604651162791,
+      "correction_accuracy": 0.9545454545454546
     },
     "truthfulqa": {
-      "n": 322,
-      "corrected_cases": 124,
-      "corrected_positive_cases": 69,
-      "correction_abstained_cases": 133,
-      "fixed_positive_cases": 6,
-      "regression_cases": 55,
-      "regression_rate": 0.17080745341614906,
-      "positive_hallucination_reduction": 0.03636363636363636,
-      "after_hallucination_rate": 0.5,
-      "correction_accuracy": 0.08695652173913043
+      "n": 318,
+      "corrected_cases": 14,
+      "corrected_positive_cases": 14,
+      "correction_abstained_cases": 29,
+      "fixed_positive_cases": 14,
+      "regression_cases": 0,
+      "regression_rate": 0.0,
+      "positive_hallucination_reduction": 0.0880503144654088,
+      "after_hallucination_rate": 0.20125786163522014,
+      "correction_accuracy": 1.0
     }
   },
   "config": {
@@ -42,7 +45,12 @@
     "out_dir": "results/journal_v2",
     "correction_threshold": null,
     "min_retrieval_confidence": 0.2,
-    "max_answer_support": 0.3,
+    "max_answer_support": 0.2,
+    "min_evidence_support": 0.4,
+    "safe_mode": true,
+    "max_regression_target": 0.01,
+    "use_nli_gate": false,
     "enable_abstention": true
-  }
+  },
+  "regression_target_met": true
 }

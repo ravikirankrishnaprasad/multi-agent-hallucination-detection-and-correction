@@ -1,0 +1,9 @@
+{
+  "min_retrieval_confidence": 0.2,
+  "max_answer_support": 0.2,
+  "min_evidence_support": 0.4,
+  "corrected_cases": 36.0,
+  "regression_rate": 0.0,
+  "positive_hallucination_reduction": 0.017811704834605598,
+  "correction_accuracy": 0.9722222222222222
+}
