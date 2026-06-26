@@ -1,0 +1,7 @@
+split,dataset,rows,unique_questions
+dev,medhallu,2710,1472
+dev,truthfulqa,873,1472
+test,medhallu,2720,1473
+test,truthfulqa,873,1473
+train,medhallu,12570,6871
+train,truthfulqa,4462,6871

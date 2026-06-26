@@ -1,0 +1,6 @@
+dataset,answer_type,label,count
+medhallu,ground_truth,0,9000
+medhallu,hallucinated_answer,1,9000
+truthfulqa,best_answer,0,817
+truthfulqa,correct_answer,0,2021
+truthfulqa,incorrect_answer,1,3370

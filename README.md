@@ -12,6 +12,11 @@ The project investigates methods for **detecting and correcting hallucinations i
 
 ---
 
+> **Note on versions and framing (journal_v2).**
+> The text below describes the earlier dissertation-derived **v1** work, which used "multi-agent" terminology and was submitted to (and rejected by) *Discover Artificial Intelligence*. v1 is preserved as the historical baseline (git tag `v1-ljmu-dissertation`; original scripts under `scripts/`).
+>
+> The ongoing **journal_v2** rebuild (`scripts/journal_v2/`, `docs/journal_v2/`, `results/journal_v2/`) reframes the system more accurately as a **lightweight modular retrieval-grounded hallucination detection and conservative correction pipeline** — a sequence of deterministic processing modules, not independent reasoning agents. Phase 1 reconstructs the dataset so that **both** MedHallu and TruthfulQA contribute **both** factual (label 0) and hallucinated (label 1) examples, removing the v1 confound in which dataset identity was tied to the label. See `docs/journal_v2/terminology_reframe.md`, `docs/journal_v2/phase1_reproduction.md`, and `REVIEWER_REJECTION_ACTION_PLAN.md`.
+
 ## Research Preprint 
 
 This repository accompanies the research preprint: **A Lightweight Retrieval-Grounded Multi-Agent Framework for Hallucination Detection and Correction in Large Language Models** 

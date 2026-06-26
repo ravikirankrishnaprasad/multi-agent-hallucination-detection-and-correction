@@ -1,0 +1,9 @@
+# Derived dataset artifacts (balanced_dataset*.csv) embed text from data/raw,
+# which is gitignored for size/licensing reasons. Keep them out of version
+# control and regenerate locally:
+#   python scripts/journal_v2/build_balanced_dataset.py \
+#     --medhallu_path data/raw/medhallu_data.csv \
+#     --truthfulqa_path data/raw/TruthfulQA.csv
+#   python scripts/journal_v2/create_grouped_split.py --seed 42
+*.csv
+!.gitignore
