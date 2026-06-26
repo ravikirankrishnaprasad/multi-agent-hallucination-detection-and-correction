@@ -1,4 +1,0 @@
-scope,n,corrected_cases,corrected_positive_cases,correction_abstained_cases,fixed_positive_cases,regression_cases,regression_rate,positive_hallucination_reduction,after_hallucination_rate,correction_accuracy,correction_coverage,abstention_rate,safe_correction_rate
-overall,3930,19,19,607,19,0,0.0,0.009669211195928753,0.4264631043256997,1.0,0.004834605597964376,0.1544529262086514,0.004834605597964376
-medhallu,3612,5,5,578,5,0,0.0,0.0027685492801771874,0.44629014396456257,1.0,,,
-truthfulqa,318,14,14,29,14,0,0.0,0.0880503144654088,0.20125786163522014,1.0,,,

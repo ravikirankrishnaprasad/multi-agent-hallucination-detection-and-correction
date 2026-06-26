@@ -8,40 +8,6 @@
 
 This repository contains the implementation accompanying the MSc dissertation submitted to **Liverpool John Moores University (LJMU)**.
 
-## Journal v2 Experiments
-
-The dissertation (v1) pipeline remains intact in `scripts/` as the historical baseline. Journal v2 lives separately in `scripts/journal_v2/`: a leakage-safe modular retrieval-grounded pipeline with normalized-question grouped splitting. Detection thresholds and correction gates are selected on development data only; final metrics are reported on test data only.
-
-The earlier dissertation/preprint used a multi-agent framing. Journal v2 intentionally uses more conservative wording: **modular retrieval-grounded pipeline**, **leakage-safe benchmark protocol**, and **conservative evidence-gated correction**. It does not claim true independent multi-agent reasoning. MiniLM embedding retrieval is optional; NLI verification remains optional future work.
-
-### Final journal-v2 results
-
-| Method | F1 | Macro-F1 | Balanced accuracy |
-| --- | ---: | ---: | ---: |
-| TF-IDF weighted | 0.4701 | 0.6048 | 0.6506 |
-| BM25 weighted | 0.1771 | 0.4318 | 0.5461 |
-| MiniLM embedding | 0.6532 | 0.5832 | 0.5949 |
-
-Safe correction achieved regression rate **0.0000**, coverage **0.48%**, correction accuracy **1.0000**, and **19** fixed positives. TF-IDF weighted is the best balanced method.
-
-First create the v1 processed dataset if it is not already present, then run:
-
-```bash
-python scripts/journal_v2/run_dataset_builder.py --input data/processed/hallu_detection_dataset.csv --out_dir results/journal_v2 --random_seed 42 --dev_size .20 --test_size .20 --stratified
-python scripts/journal_v2/run_dataset_audit.py --input data/processed/hallu_detection_dataset.csv --splits results/journal_v2/split_assignments.csv --out_dir results/journal_v2
-python scripts/journal_v2/run_threshold_selection.py --input data/processed/hallu_detection_dataset.csv --splits results/journal_v2/split_assignments.csv --out_dir results/journal_v2
-python scripts/journal_v2/run_detection.py --input data/processed/hallu_detection_dataset.csv --splits results/journal_v2/split_assignments.csv --selected_threshold results/journal_v2/selected_threshold.json --evaluation_split dev --out_dir results/journal_v2
-python scripts/journal_v2/run_detection.py --input data/processed/hallu_detection_dataset.csv --splits results/journal_v2/split_assignments.csv --selected_threshold results/journal_v2/selected_threshold.json --evaluation_split test --out_dir results/journal_v2
-python scripts/journal_v2/run_correction_gate_sweep.py --predictions results/journal_v2/dev_predictions.jsonl --split dev --out_dir results/journal_v2
-python scripts/journal_v2/run_correction.py --predictions results/journal_v2/predictions.jsonl --selected_gate results/journal_v2/selected_correction_gate.json --enable_abstention --out_dir results/journal_v2
-python scripts/journal_v2/run_retrieval_baselines.py --input data/processed/hallu_detection_dataset.csv --splits results/journal_v2/split_assignments.csv --selected_threshold results/journal_v2/selected_threshold.json --out_dir results/journal_v2
-python scripts/journal_v2/run_embedding_baseline.py --input data/processed/hallu_detection_dataset.csv --splits results/journal_v2/split_assignments.csv --out_dir results/journal_v2
-python scripts/journal_v2/run_multiseed.py --input data/processed/hallu_detection_dataset.csv --out_dir results/journal_v2
-python scripts/journal_v2/generate_paper_tables.py
-```
-
-Outputs include constructed-data/split summaries, dev sweep and selected threshold, test predictions and metrics, gated corrections and regression metrics, ablations, and representative error analysis. See [the v2 methodology](docs/journal_v2_methodology.md) for protocol and limitations.
-
 The project investigates methods for **detecting and correcting hallucinations in Large Language Model (LLM) outputs** using a modular multi-agent verification framework.
 
 ---
