@@ -1,4 +1,0 @@
-{
-  "status": "skipped",
-  "reason": "transformers is not installed; NLI is optional."
-}
